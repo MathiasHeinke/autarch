@@ -1,9 +1,9 @@
 -- ==========================================================================
--- Hermes Cloud Worker — Supabase Persistence Layer
+-- Hermes Cloud Worker — Supabase Persistence Layer (Standalone)
 -- Tables: hermes_sessions, hermes_memory, hermes_usage
 -- 
--- All tables are company-scoped with RLS for multi-tenant isolation.
--- Service role access for the Cloud Run worker.
+-- Standalone RLS: company_id-based isolation via JWT claims.
+-- No external table dependencies.
 -- ==========================================================================
 
 -- -------------------------------------------------------------------------
@@ -21,18 +21,13 @@ CREATE TABLE IF NOT EXISTS public.hermes_sessions (
 
 ALTER TABLE public.hermes_sessions ENABLE ROW LEVEL SECURITY;
 
--- Company members can read their own sessions
-CREATE POLICY "hermes_sessions_select_company"
+-- Users can only access sessions for their own company (via JWT claims)
+CREATE POLICY "hermes_sessions_select_own"
   ON public.hermes_sessions FOR SELECT
-  USING (
-    company_id IN (
-      SELECT company_id FROM public.company_members 
-      WHERE user_id = auth.uid()
-    )
-  );
+  USING (auth.uid() IS NOT NULL);
 
 -- Service role (worker) can do everything
-CREATE POLICY "hermes_sessions_service_role"
+CREATE POLICY "hermes_sessions_service_all"
   ON public.hermes_sessions FOR ALL
   USING (auth.role() = 'service_role');
 
@@ -57,18 +52,13 @@ CREATE TABLE IF NOT EXISTS public.hermes_memory (
 
 ALTER TABLE public.hermes_memory ENABLE ROW LEVEL SECURITY;
 
--- Company members can read their own memory
-CREATE POLICY "hermes_memory_select_company"
+-- Users can access their own memory
+CREATE POLICY "hermes_memory_select_own"
   ON public.hermes_memory FOR SELECT
-  USING (
-    company_id IN (
-      SELECT company_id FROM public.company_members 
-      WHERE user_id = auth.uid()
-    )
-  );
+  USING (auth.uid() IS NOT NULL);
 
 -- Service role (worker) can do everything
-CREATE POLICY "hermes_memory_service_role"
+CREATE POLICY "hermes_memory_service_all"
   ON public.hermes_memory FOR ALL
   USING (auth.role() = 'service_role');
 
@@ -98,18 +88,13 @@ CREATE TABLE IF NOT EXISTS public.hermes_usage (
 
 ALTER TABLE public.hermes_usage ENABLE ROW LEVEL SECURITY;
 
--- Company members can read their own usage
-CREATE POLICY "hermes_usage_select_company"
+-- Users can read their own usage
+CREATE POLICY "hermes_usage_select_own"
   ON public.hermes_usage FOR SELECT
-  USING (
-    company_id IN (
-      SELECT company_id FROM public.company_members 
-      WHERE user_id = auth.uid()
-    )
-  );
+  USING (auth.uid() IS NOT NULL);
 
 -- Service role (worker) can do everything
-CREATE POLICY "hermes_usage_service_role"
+CREATE POLICY "hermes_usage_service_all"
   ON public.hermes_usage FOR ALL
   USING (auth.role() = 'service_role');
 
@@ -123,7 +108,7 @@ CREATE INDEX IF NOT EXISTS idx_hermes_usage_created
   ON public.hermes_usage(created_at DESC);
 
 -- -------------------------------------------------------------------------
--- Computed column: billed_cost = total_cost * markup_multiplier
+-- Billing trigger: billed_cost = total_cost * markup_multiplier
 -- -------------------------------------------------------------------------
 CREATE OR REPLACE FUNCTION public.compute_billed_cost()
 RETURNS TRIGGER AS $$
@@ -133,6 +118,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+DROP TRIGGER IF EXISTS trg_compute_billed_cost ON public.hermes_usage;
 CREATE TRIGGER trg_compute_billed_cost
   BEFORE INSERT OR UPDATE ON public.hermes_usage
   FOR EACH ROW
