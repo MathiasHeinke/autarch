@@ -1,0 +1,29 @@
+{
+  "model": {
+    "provider": "nousresearch",
+    "api_base": "https://inference-api.nousresearch.com/v1",
+    "api_key": "${NOUSRESEARCH_API_KEY}",
+    "model": "Hermes-4-405B"
+  },
+  "reasoning": {
+    "enabled": true,
+    "show_thinking": true,
+    "budget_tokens": 16384
+  },
+  "tools": {
+    "web": true,
+    "file": true,
+    "memory": true,
+    "delegation": true,
+    "todo": true,
+    "terminal": false,
+    "code": false,
+    "browser": false,
+    "vision": false,
+    "skills": false
+  },
+  "safety": {
+    "max_iterations": 50,
+    "cost_cap_per_run_usd": 5.0
+  }
+}
