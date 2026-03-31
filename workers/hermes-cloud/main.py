@@ -1,16 +1,19 @@
 """
-Hermes Cloud Worker — FastAPI Application
-Cloud Run worker for Hermes v0.6.0 agent execution with NDJSON streaming.
+Hermes Cloud Worker — FastAPI Application (Hybrid: Hermes CLI + FastAPI)
+
+Uses the Hermes CLI tool (installed via installer script) for agent execution,
+wrapped in a FastAPI server for guaranteed port binding on Cloud Run.
 
 Endpoints:
-  GET  /v1/health   — Liveness + provider connectivity check
-  POST /v1/execute   — Execute Hermes agent with NDJSON response stream
+  GET  /v1/health   — Liveness + Hermes CLI check
+  POST /v1/execute   — Execute Hermes agent via CLI, stream as NDJSON
 """
 import json
+import os
+import subprocess
 import time
 import logging
-import traceback
-from typing import AsyncGenerator, Generator
+from typing import Generator
 
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import StreamingResponse, JSONResponse
@@ -20,7 +23,6 @@ from config import (
     DEFAULT_MODEL,
     MAX_ITERATIONS_HARD_CAP,
     COST_PER_RUN_HARD_CAP,
-    PORT,
 )
 from models import ExecuteRequest, ExecuteEvent, HealthResponse
 
@@ -30,28 +32,36 @@ from models import ExecuteRequest, ExecuteEvent, HealthResponse
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
 logger = logging.getLogger("hermes-cloud-worker")
 
-app = FastAPI(
-    title="Hermes Cloud Worker",
-    version="0.1.0",
-    docs_url=None,  # No public docs
-    redoc_url=None,
-)
+app = FastAPI(title="Hermes Cloud Worker", version="0.2.0", docs_url=None, redoc_url=None)
 
 
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
 def ndjson_line(event: ExecuteEvent) -> str:
-    """Serialize an event to a single NDJSON line."""
     return json.dumps(event.model_dump(exclude_none=True), ensure_ascii=False) + "\n"
-
 
 def system_event(content: str) -> str:
     return ndjson_line(ExecuteEvent(type="system", content=content))
 
-
 def error_event(content: str) -> str:
     return ndjson_line(ExecuteEvent(type="error", content=content, isError=True))
+
+def find_hermes_binary() -> str:
+    """Find the hermes binary in known locations."""
+    candidates = [
+        os.path.expanduser("~/.local/bin/hermes"),
+        os.path.expanduser("~/.hermes/bin/hermes"),
+        "/usr/local/bin/hermes",
+    ]
+    for c in candidates:
+        if os.path.isfile(c) and os.access(c, os.X_OK):
+            return c
+    # Fallback: try PATH
+    result = subprocess.run(["which", "hermes"], capture_output=True, text=True)
+    if result.returncode == 0:
+        return result.stdout.strip()
+    return ""
 
 
 # ---------------------------------------------------------------------------
@@ -59,17 +69,26 @@ def error_event(content: str) -> str:
 # ---------------------------------------------------------------------------
 @app.get("/v1/health")
 async def health() -> JSONResponse:
-    """Liveness check + NousResearch API connectivity."""
-    api_connected = bool(NOUSRESEARCH_API_KEY)
-
-    # Optional: verify API key works (lightweight check)
+    hermes_bin = find_hermes_binary()
+    hermes_version = ""
+    
+    if hermes_bin:
+        try:
+            result = subprocess.run(
+                [hermes_bin, "version"],
+                capture_output=True, text=True, timeout=5
+            )
+            hermes_version = result.stdout.strip() or result.stderr.strip()
+        except Exception:
+            pass
+    
     resp = HealthResponse(
-        status="healthy" if api_connected else "degraded",
+        status="healthy" if hermes_bin and NOUSRESEARCH_API_KEY else "degraded",
         model=DEFAULT_MODEL,
-        version="0.1.0",
-        apiConnected=api_connected,
+        version=hermes_version or "unknown",
+        apiConnected=bool(NOUSRESEARCH_API_KEY),
     )
-    status_code = 200 if api_connected else 503
+    status_code = 200 if resp.status == "healthy" else 503
     return JSONResponse(content=resp.model_dump(), status_code=status_code)
 
 
@@ -78,133 +97,92 @@ async def health() -> JSONResponse:
 # ---------------------------------------------------------------------------
 @app.post("/v1/execute")
 async def execute(req: ExecuteRequest) -> StreamingResponse:
-    """
-    Execute a Hermes agent run and stream events as NDJSON.
-
-    This endpoint:
-    1. Validates the request (toolsets, iterations, cost cap)
-    2. Creates a Hermes Profile on-the-fly from the request payload
-    3. Runs the agent with iteration cap
-    4. Streams events as NDJSON
-    5. Emits a final usage summary
-    """
     if not NOUSRESEARCH_API_KEY:
         raise HTTPException(status_code=503, detail="NOUSRESEARCH_API_KEY not configured")
-
-    # Enforce hard caps (belt + suspenders — Pydantic already validates)
+    
+    hermes_bin = find_hermes_binary()
+    if not hermes_bin:
+        raise HTTPException(status_code=503, detail="Hermes binary not found")
+    
     max_iters = min(req.maxIterations, MAX_ITERATIONS_HARD_CAP)
     cost_cap = min(req.costCapPerRun, COST_PER_RUN_HARD_CAP)
-
+    
     logger.info(
-        "Execute: agent=%s run=%s model=%s iters=%d cap=$%.2f toolsets=%s",
-        req.agentId, req.runId, req.model, max_iters, cost_cap, req.enabledToolsets,
+        "Execute: agent=%s run=%s model=%s iters=%d cap=$%.2f",
+        req.agentId, req.runId, req.model, max_iters, cost_cap,
     )
 
+    # Extract user message from context
+    messages = req.context.get("messages", [])
+    user_message = ""
+    if messages:
+        last_msg = messages[-1] if isinstance(messages, list) else messages
+        user_message = last_msg.get("content", "") if isinstance(last_msg, dict) else str(last_msg)
+    if not user_message:
+        user_message = "Continue with the current task."
+
     def generate() -> Generator[str, None, None]:
-        """Synchronous generator for NDJSON events."""
         start = time.time()
-        total_input_tokens = 0
-        total_output_tokens = 0
-        iterations_done = 0
+        
+        yield system_event(f"Hermes Cloud Worker v0.2.0 — model={req.model}, max_iterations={max_iters}")
 
         try:
-            yield system_event(f"Hermes Cloud Worker starting — model={req.model}, max_iterations={max_iters}")
+            # Build Hermes CLI command
+            cmd = [hermes_bin, "--yolo"]
+            
+            # Use profile if specified
+            if req.profileName and req.profileName != "default":
+                cmd.extend(["--profile", req.profileName])
 
-            # ---------------------------------------------------------------
-            # Hermes Agent Execution
-            # ---------------------------------------------------------------
-            # Import hermes lazily to avoid startup cost if not needed
-            try:
-                from hermes.agent import AIAgent
-                from hermes.profile import Profile
-            except ImportError:
-                yield error_event("hermes-agent package not installed on this worker")
-                return
-
-            # Create profile on-the-fly (stateless — no file-based profiles)
-            profile = Profile(
-                name=req.profileName,
-                model=req.model,
-                api_key=NOUSRESEARCH_API_KEY,
-                system_prompt=req.systemPrompt or None,
-                enabled_toolsets=req.enabledToolsets,
-                max_iterations=max_iters,
+            # Add the user message via stdin
+            logger.info("Running: %s", " ".join(cmd))
+            
+            proc = subprocess.Popen(
+                cmd,
+                stdin=subprocess.PIPE,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True,
+                env={
+                    **os.environ,
+                    "NOUSRESEARCH_API_KEY": NOUSRESEARCH_API_KEY,
+                },
+                timeout=int(cost_cap * 120),  # rough timeout based on cost cap
             )
-
-            agent = AIAgent(profile=profile)
-
-            # Extract the user message from context
-            messages = req.context.get("messages", [])
-            user_message = ""
-            if messages:
-                last_msg = messages[-1] if isinstance(messages, list) else messages
-                user_message = last_msg.get("content", "") if isinstance(last_msg, dict) else str(last_msg)
-
-            if not user_message:
-                user_message = "Continue with the current task."
-
-            yield system_event(f"Running agent iteration (max {max_iters})...")
-
-            # Run the agent
-            result = agent.run(user_message)
-
-            # Parse result
-            if hasattr(result, "response"):
+            
+            # Send the prompt
+            stdout, stderr = proc.communicate(input=user_message, timeout=300)
+            
+            if stdout:
                 yield ndjson_line(ExecuteEvent(
                     type="response",
-                    content=result.response or "Agent completed without response.",
+                    content=stdout.strip(),
                 ))
-
-            if hasattr(result, "usage"):
-                total_input_tokens = getattr(result.usage, "input_tokens", 0) or 0
-                total_output_tokens = getattr(result.usage, "output_tokens", 0) or 0
-
-            if hasattr(result, "tool_calls"):
-                for tc in (result.tool_calls or []):
-                    yield ndjson_line(ExecuteEvent(
-                        type="tool_call",
-                        name=getattr(tc, "name", "unknown"),
-                        input=getattr(tc, "input", {}),
-                    ))
-
-            iterations_done = getattr(result, "iterations", 1) or 1
-
-        except Exception as e:
-            logger.error("Agent execution error: %s", traceback.format_exc())
-            yield error_event(f"Agent execution failed: {str(e)}")
-
-        finally:
-            duration_ms = int((time.time() - start) * 1000)
-
-            # Rough cost estimate (NousResearch pricing)
-            # Hermes 4 405B: ~$0.002/1K input, ~$0.006/1K output
-            input_cost = (total_input_tokens / 1000) * 0.002
-            output_cost = (total_output_tokens / 1000) * 0.006
-            total_cost = input_cost + output_cost
-
-            yield ndjson_line(ExecuteEvent(
-                type="usage",
-                inputTokens=total_input_tokens,
-                outputTokens=total_output_tokens,
-                totalCostUsd=round(total_cost, 6),
-                iterations=iterations_done,
-                content=f"Duration: {duration_ms}ms",
-            ))
-
-            logger.info(
-                "Execute done: agent=%s tokens=%d/%d cost=$%.4f iters=%d duration=%dms",
-                req.agentId, total_input_tokens, total_output_tokens,
-                total_cost, iterations_done, duration_ms,
-            )
-
-            # Cleanup
+            
+            if stderr and proc.returncode != 0:
+                yield error_event(f"Hermes stderr: {stderr.strip()[:500]}")
+            
+        except subprocess.TimeoutExpired:
+            yield error_event(f"Hermes execution timed out after 300s")
             try:
-                if 'agent' in dir():
-                    del agent
-                if 'profile' in dir():
-                    del profile
+                proc.kill()
             except Exception:
                 pass
+        except Exception as e:
+            logger.error("Execution error: %s", str(e))
+            yield error_event(f"Execution failed: {str(e)}")
+        
+        finally:
+            duration_ms = int((time.time() - start) * 1000)
+            yield ndjson_line(ExecuteEvent(
+                type="usage",
+                inputTokens=0,
+                outputTokens=0,
+                totalCostUsd=0,
+                iterations=1,
+                content=f"Duration: {duration_ms}ms",
+            ))
+            logger.info("Execute done: agent=%s duration=%dms", req.agentId, duration_ms)
 
     return StreamingResponse(
         generate(),
@@ -216,9 +194,7 @@ async def execute(req: ExecuteRequest) -> StreamingResponse:
     )
 
 
-# ---------------------------------------------------------------------------
-# Startup
-# ---------------------------------------------------------------------------
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=PORT)
+    port = int(os.environ.get("PORT", "8080"))
+    uvicorn.run(app, host="0.0.0.0", port=port)
