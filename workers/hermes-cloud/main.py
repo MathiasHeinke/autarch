@@ -147,7 +147,6 @@ async def execute(req: ExecuteRequest) -> StreamingResponse:
                     **os.environ,
                     "NOUSRESEARCH_API_KEY": NOUSRESEARCH_API_KEY,
                 },
-                timeout=int(cost_cap * 120),  # rough timeout based on cost cap
             )
             
             # Send the prompt
