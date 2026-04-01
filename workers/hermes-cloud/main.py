@@ -216,7 +216,7 @@ async def execute(
                 skip_memory=True,           # No ~/.hermes/memories/ — externalized
                 skip_context_files=True,     # No SOUL.md/AGENTS.md injection
                 persist_session=False,       # No session file writes
-                enabled_toolsets=safe_toolsets if safe_toolsets else None,
+                enabled_toolsets=safe_toolsets if safe_toolsets is not None else None,
                 disabled_toolsets=list(BLOCKED_TOOLSETS),
                 ephemeral_system_prompt=system_prompt,
                 session_id=req.runId or str(uuid.uuid4()),
