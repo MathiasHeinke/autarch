@@ -55,24 +55,28 @@ SERVE_UI=***
 
 ## Docker & Deployment
 
-### Dockerfile
+### Hauptanwendung (Paperclip)
 - **Base Image:** `node:lts-trixie-slim`
 - **Exposed Port:** `3100`
 
-### docker-compose.yml Services
-- `db`
-- `environment`
-- `healthcheck`
-- `ports`
-- `volumes`
-- `server`
-- `ports`
-- `environment`
-- `volumes`
-- `depends_on`
-- `db`
-- `volumes`
-- `pgdata`
+### Hermes Worker (Cloud Run) — ✅ DEPLOYED
+- **Base Image:** `python:3.12-slim`
+- **Exposed Port:** `8080`
+- **URL:** Cloud Run europe-west1
+- **Library:** `hermes-agent[honcho]` @ git
+
+### Honcho Self-Hosted (Docker Compose) — ✅ LIVE
+| Service | Port (Host) | Port (Container) | Image |
+|---------|-------------|-------------------|-------|
+| `api` | 8100 | 8000 | honcho:latest |
+| `database` | 5433 | 5432 | pgvector/pgvector:pg15 |
+| `redis` | 6380 | 6379 | redis:8.2 |
+| Pfad | `infrastructure/honcho/docker-compose.yml` | | |
+
+### docker-compose.yml Services (Paperclip Main)
+- `db`: PostgreSQL mit healthcheck
+- `server`: Express API auf Port 3100
+- `volumes`: pgdata
 
 ## External Services
 
@@ -81,10 +85,11 @@ SERVE_UI=***
 | PGlite | Database (dev) | (embedded) | Zero-config dev DB |
 | PostgreSQL | Database (prod) | `DATABASE_URL` | Production persistence |
 | OpenRouter | LLM Gateway | `OPENROUTER_API_KEY` | Hermes 4 405B inference |
-| Honcho | Reasoning | `HONCHO_API_URL` | Cross-session dialectic |
-| Google Cloud Run | Container | GCP Project | Hermes Worker hosting |
+| Honcho (Docker) | Reasoning | `HONCHO_API_URL` | Cross-session dialectic — **✅ LIVE localhost:8100** |
+| Google Cloud Run | Container | GCP Project | Hermes Worker v0.6.0 — **✅ DEPLOYED europe-west1** |
 | Apify | Scraping | `APIFY_API_KEY` | Web scraping MCP |
 | Better Auth | Auth Framework | (built-in) | Board user authentication |
+| NousResearch Direct | LLM Fallback | `NOUSRESEARCH_API_KEY` | Worker Inference Fallback |
 
 ## Monorepo Workspace Packages
 

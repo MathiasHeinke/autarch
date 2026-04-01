@@ -1,6 +1,6 @@
 # Hermes Agent — Vollständige Referenz
 
-> **Status:** Integriert via `hermes-paperclip-adapter` + Cloud Run Worker + Python Library Mode
+> **Status:** Integriert via `hermes-paperclip-adapter` + Cloud Run Worker v0.6.0 (✅ LIVE) + Python Library Mode
 > **Docs:** [hermes-agent.nousresearch.com/docs](https://hermes-agent.nousresearch.com/docs/)
 > **Repo:** [github.com/NousResearch/hermes-agent](https://github.com/NousResearch/hermes-agent) (17.8k⭐ | v0.5.0 | 2026-03-28)
 
@@ -515,16 +515,19 @@ hermes-agent/
 
 ## Nächste Schritte für Autarch
 
-| Priorität | Action | Status |
-|-----------|--------|--------|
-| ✅ DONE | Hermes Python Library in Worker installiert (pip from git) | Abgeschlossen |
-| ✅ DONE | Stateless Refactoring (6 Phasen, alle Fortress Gates bestanden) | Abgeschlossen |
-| ✅ DONE | Externalized Brain Schema + Memory Lifecycle | Abgeschlossen |
-| ✅ DONE | Honcho Integration (REST Client + Self-Host Docs) | Abgeschlossen |
-| ✅ DONE | Enterprise UI Feature Flag (HERMES_ONLY_MODE) | Abgeschlossen |
-| 🔴 HIGH | Cloud Run Worker deployen (Docker Image + Service) | Offen |
-| 🔴 HIGH | Honcho Self-Hosted Instance aufsetzen (Docker Compose) | Offen |
-| 🔴 HIGH | End-to-End Test (Task → Worker → Memory → Honcho) | Offen |
-| 🟡 MED | Custom Autarch MCP-Server implementieren | Offen |
-| 🟡 MED | Heartbeat-Cron aktivieren (5-Min-Intervall) | Offen |
-| 🟢 LOW | Trajectory-Saving für Finetuning aktivieren | Offen |
+| Priorität | Action | Status | Datum |
+|-----------|--------|--------|-------|
+| ✅ DONE | Hermes Python Library in Worker installiert (pip from git) | Abgeschlossen | 2026-03-30 |
+| ✅ DONE | Stateless Refactoring (6 Phasen, alle Fortress Gates bestanden) | Abgeschlossen | 2026-03-31 |
+| ✅ DONE | Externalized Brain Schema + Memory Lifecycle | Abgeschlossen | 2026-03-31 |
+| ✅ DONE | Honcho Integration (REST Client + Self-Host Docs) | Abgeschlossen | 2026-03-31 |
+| ✅ DONE | Enterprise UI Feature Flag (HERMES_ONLY_MODE) | Abgeschlossen | 2026-03-31 |
+| ✅ DONE | Cloud Run Worker deployen (v0.6.0, europe-west1) | **DEPLOYED 2026-04-01** | 2026-04-01 |
+| ✅ DONE | Honcho Self-Hosted Instance aufsetzen (Docker Compose :8100) | **LIVE 2026-04-01** | 2026-04-01 |
+| ✅ DONE | End-to-End Test (Task → Worker → Memory → Honcho) | **16/16 Steps PASSED** | 2026-04-01 |
+| 🟡 MED | Custom Autarch MCP-Server implementieren | Offen | — |
+| 🟡 MED | Heartbeat-Cron aktivieren (5-Min-Intervall) | Offen | — |
+| 🟡 MED | Worker Agents (23) via Library Mode produktiv schalten | Offen | — |
+| 🟢 LOW | Trajectory-Saving für Finetuning aktivieren | Offen | — |
+| 🟢 LOW | heartbeat.ts modularisieren (4.038 LoC → Submodule) | Offen | — |
+| 🟢 LOW | AgentDetail.tsx aufteilen (4.078 LoC → Composition) | Offen | — |
