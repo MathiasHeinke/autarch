@@ -50,6 +50,11 @@
 
 > *IMMER einen Eintrag schreiben — auch bei kleinen Fixes.*
 
+### Session 2026-04-02 — /ship-it: soul-loader.ts — G-008 CLOSED
+- **Thema:** workers/agents/{profileName}/SOUL.md in Hermes-Execution verdrahten. "ok go" vom Founder.
+- **Ergebnis:** soul-loader.ts (neu), execute.ts (soul prefix), heartbeat.ts (pre-load hook). typecheck Exit 0. 3 Commits. G-008 in semantic-context.md geschlossen. progress.md updated. Alle Memory-Dateien synchron.
+- **Offene Punkte:** P1: Heartbeat-Cron, Custom MCP-Server, heartbeat.ts Refactoring.
+
 ### Session 2026-04-02 — /mt-arch: Semantic Context v2.0 + Founder Vision
 - **Thema:** Founder Vision "Go Native" in semantic-context.md verankern. Mastertable: Karpathy, Carmack, Elon, Sherlock, Mr. Robot, Taleb.
 - **Ergebnis:** `semantic-context.md` komplett neu geschrieben (v2.0 ~350 Zeilen): Nordstern-Section, 5 Directives, Dependency Graph, 9 Gotchas, 4 Strategic Guardrails, Session-Chronik-Template.

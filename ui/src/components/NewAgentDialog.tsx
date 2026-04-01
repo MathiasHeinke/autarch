@@ -32,7 +32,7 @@ type AdvancedAdapterType =
   | "pi_local"
   | "cursor"
   | "openclaw_gateway"
-  | "hermes_local";
+  | "hermes_cloud";
 
 const ADVANCED_ADAPTER_OPTIONS: Array<{
   value: AdvancedAdapterType;
@@ -68,10 +68,10 @@ const ADVANCED_ADAPTER_OPTIONS: Array<{
     desc: "Local multi-provider agent",
   },
   {
-    value: "hermes_local",
-    label: "Hermes Agent",
+    value: "hermes_cloud",
+    label: "Hermes Cloud",
     icon: HermesIcon,
-    desc: "Local multi-provider agent",
+    desc: "Cloud-hosted Hermes agent",
   },
   {
     value: "pi_local",

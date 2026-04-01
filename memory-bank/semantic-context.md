@@ -331,6 +331,33 @@ git merge upstream/main  # Konflikte NUR in workers/hermes-cloud/ + memory-bank/
 
 ## 7. Session-Chronik (neueste zuerst)
 
+### 2026-04-02 — /ship-it: soul-loader.ts — G-008 CLOSED
+
+**Pilot:** Mathias Heinke ("ok go")
+**Aufgabe:** workers/agents/{profileName}/SOUL.md in Hermes-Execution verdrahten (G-008)
+
+**Geänderte Module:**
+- `server/src/adapters/hermes-cloud/soul-loader.ts` [NEU] — loadAgentSoul(), buildSoulSystemPrompt()
+- `server/src/adapters/hermes-cloud/execute.ts` — soulPrefix + configSystemPrompt → systemPrompt
+- `server/src/services/heartbeat.ts` — Soul pre-load nach Honcho-Block in hermes_cloud guard
+- `memory-bank/semantic-context.md` — v2.0 (diese Session + vorige in einem Push)
+- `.antigravity/logs/architect-memory.md` — SG-001–004 + 7 Directives + Session Log
+
+**Erkenntnisse:**
+- `adapterConfig.profileName` ist das einzige Konfigurationsfeld das Autarch an heartbeat.ts übergeben muss
+- Path Traversal: `[a-z0-9_-]` regex + AGENTS_ROOT assertion macht den Loader sicher
+- Soul ist non-fatal: fehlende Profile = Agent läuft ohne Persona (graceful degradation)
+- Soul setzt die Persona (WORUM bin ich?) — config.systemPrompt setzt die Task (WAS tue ich?)
+
+**Abhängigkeiten entdeckt:**
+- `agent.adapterConfig` (DB JSON) → `profileName` → `workers/agents/{name}/SOUL.md`
+- Soul → `context.hermesAgentSoul` (JSON string) → execute.ts → `systemPrompt` prefix → Worker
+
+**Entscheidungen:**
+- Soul prepends (Persona first), dann config.systemPrompt (Task-Override danach)
+- SOUL.md + AGENTS.md + HEARTBEAT.md werden alle injiziert (vollständiger Kontext)
+- TOOLS.md wird NICHT injiziert (Tools sind über enabledToolsets konfiguriert, nicht via Prompt)
+
 ### 2026-04-02 — /mt-arch: Semantic Context v2.0 — Founder Vision Integration
 
 **Pilot:** Mathias Heinke (Founder)
