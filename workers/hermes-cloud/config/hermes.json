@@ -2,8 +2,7 @@
   "model": {
     "provider": "nousresearch",
     "api_base": "https://inference-api.nousresearch.com/v1",
-    "api_key": "${NOUSRESEARCH_API_KEY}",
-    "model": "Hermes-4-405B"
+    "model": "nousresearch/hermes-4-405b"
   },
   "reasoning": {
     "enabled": true,

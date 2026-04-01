@@ -1,4 +1,4 @@
-hermes-agent>=0.6.0
+hermes-agent[honcho] @ git+https://github.com/NousResearch/hermes-agent.git
 fastapi>=0.115.0
 uvicorn>=0.34.0
 pydantic>=2.10.0

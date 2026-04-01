@@ -1,21 +1,23 @@
 """
-Hermes Cloud Worker — FastAPI Application (Hybrid: Hermes CLI + FastAPI)
+Hermes Cloud Worker — FastAPI Application (Stateless Inference Engine v0.6.0)
 
-Uses the Hermes CLI tool (installed via installer script) for agent execution,
-wrapped in a FastAPI server for guaranteed port binding on Cloud Run.
+100% stateless worker. No local persistence. No subprocess CLI.
+Uses hermes-agent Python library directly via `from run_agent import AIAgent`.
+Authentication via X-Hermes-Secret shared secret.
 
 Endpoints:
-  GET  /v1/health   — Liveness + Hermes CLI check
-  POST /v1/execute   — Execute Hermes agent via CLI, stream as NDJSON
+  GET  /v1/health   — Liveness check (no auth)
+  POST /v1/execute   — Execute Hermes agent, stream as NDJSON (auth required)
 """
 import json
 import os
-import subprocess
+import asyncio
 import time
 import logging
-from typing import Generator
+import uuid
+from typing import AsyncGenerator
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Depends, Header
 from fastapi.responses import StreamingResponse, JSONResponse
 
 from config import (
@@ -23,6 +25,9 @@ from config import (
     DEFAULT_MODEL,
     MAX_ITERATIONS_HARD_CAP,
     COST_PER_RUN_HARD_CAP,
+    HERMES_CLOUD_SECRET,
+    ALLOWED_TOOLSETS,
+    BLOCKED_TOOLSETS,
 )
 from models import ExecuteRequest, ExecuteEvent, HealthResponse
 
@@ -32,7 +37,41 @@ from models import ExecuteRequest, ExecuteEvent, HealthResponse
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
 logger = logging.getLogger("hermes-cloud-worker")
 
-app = FastAPI(title="Hermes Cloud Worker", version="0.2.0", docs_url=None, redoc_url=None)
+app = FastAPI(title="Hermes Cloud Worker", version="0.4.0", docs_url=None, redoc_url=None)
+
+# Lazy-loaded flag — checked once at startup
+_hermes_available: bool | None = None
+
+
+def _check_hermes_library() -> bool:
+    """Check if hermes-agent library is importable."""
+    global _hermes_available
+    if _hermes_available is not None:
+        return _hermes_available
+    try:
+        from run_agent import AIAgent  # noqa: F401
+        _hermes_available = True
+    except ImportError:
+        _hermes_available = False
+    return _hermes_available
+
+
+# ---------------------------------------------------------------------------
+# Gateway Authentication
+# ---------------------------------------------------------------------------
+async def verify_gateway_secret(x_hermes_secret: str = Header(..., alias="x-hermes-secret")):
+    """Verify the shared secret between Paperclip adapter and this worker.
+    
+    Returns 503 if the secret is not configured (deploy misconfiguration).
+    Returns 401 if the provided secret does not match.
+    """
+    if not HERMES_CLOUD_SECRET:
+        raise HTTPException(
+            status_code=503,
+            detail="Gateway secret not configured — set HERMES_CLOUD_SECRET env var",
+        )
+    if x_hermes_secret != HERMES_CLOUD_SECRET:
+        raise HTTPException(status_code=401, detail="Invalid gateway secret")
 
 
 # ---------------------------------------------------------------------------
@@ -47,43 +86,24 @@ def system_event(content: str) -> str:
 def error_event(content: str) -> str:
     return ndjson_line(ExecuteEvent(type="error", content=content, isError=True))
 
-def find_hermes_binary() -> str:
-    """Find the hermes binary in known locations."""
-    candidates = [
-        os.path.expanduser("~/.local/bin/hermes"),
-        os.path.expanduser("~/.hermes/bin/hermes"),
-        "/usr/local/bin/hermes",
-    ]
-    for c in candidates:
-        if os.path.isfile(c) and os.access(c, os.X_OK):
-            return c
-    # Fallback: try PATH
-    result = subprocess.run(["which", "hermes"], capture_output=True, text=True)
-    if result.returncode == 0:
-        return result.stdout.strip()
-    return ""
-
 
 # ---------------------------------------------------------------------------
-# Health
+# Health (NO AUTH — Cloud Run healthcheck needs unauthenticated access)
 # ---------------------------------------------------------------------------
 @app.get("/v1/health")
 async def health() -> JSONResponse:
-    hermes_bin = find_hermes_binary()
+    lib_ok = _check_hermes_library()
     hermes_version = ""
-    
-    if hermes_bin:
+
+    if lib_ok:
         try:
-            result = subprocess.run(
-                [hermes_bin, "version"],
-                capture_output=True, text=True, timeout=5
-            )
-            hermes_version = result.stdout.strip() or result.stderr.strip()
+            import importlib.metadata
+            hermes_version = importlib.metadata.version("hermes-agent")
         except Exception:
-            pass
-    
+            hermes_version = "installed"
+
     resp = HealthResponse(
-        status="healthy" if hermes_bin and NOUSRESEARCH_API_KEY else "degraded",
+        status="healthy" if lib_ok and NOUSRESEARCH_API_KEY else "degraded",
         model=DEFAULT_MODEL,
         version=hermes_version or "unknown",
         apiConnected=bool(NOUSRESEARCH_API_KEY),
@@ -93,80 +113,149 @@ async def health() -> JSONResponse:
 
 
 # ---------------------------------------------------------------------------
-# Execute
+# Execute (AUTH REQUIRED via gateway secret)
 # ---------------------------------------------------------------------------
 @app.post("/v1/execute")
-async def execute(req: ExecuteRequest) -> StreamingResponse:
+async def execute(
+    req: ExecuteRequest,
+    _auth: None = Depends(verify_gateway_secret),
+) -> StreamingResponse:
     if not NOUSRESEARCH_API_KEY:
         raise HTTPException(status_code=503, detail="NOUSRESEARCH_API_KEY not configured")
     
-    hermes_bin = find_hermes_binary()
-    if not hermes_bin:
-        raise HTTPException(status_code=503, detail="Hermes binary not found")
-    
+    if not _check_hermes_library():
+        raise HTTPException(status_code=503, detail="hermes-agent library not installed")
+
     max_iters = min(req.maxIterations, MAX_ITERATIONS_HARD_CAP)
-    cost_cap = min(req.costCapPerRun, COST_PER_RUN_HARD_CAP)
     
     logger.info(
-        "Execute: agent=%s run=%s model=%s iters=%d cap=$%.2f",
-        req.agentId, req.runId, req.model, max_iters, cost_cap,
+        "Execute: agent=%s run=%s model=%s iters=%d",
+        req.agentId, req.runId, req.model, max_iters,
     )
 
     # Extract user message from context
     messages = req.context.get("messages", [])
     user_message = ""
-    if messages:
-        last_msg = messages[-1] if isinstance(messages, list) else messages
-        user_message = last_msg.get("content", "") if isinstance(last_msg, dict) else str(last_msg)
+    conversation_history = []
+
+    for msg in (messages if isinstance(messages, list) else [messages]):
+        if isinstance(msg, dict):
+            role = msg.get("role", "user")
+            content = msg.get("content", "")
+            if role == "user" and not user_message:
+                # Take the last user message as the active prompt
+                pass
+            conversation_history.append({"role": role, "content": content})
+
+    # The last user message is what we execute
+    if conversation_history:
+        for msg in reversed(conversation_history):
+            if msg.get("role") == "user":
+                user_message = msg.get("content", "")
+                # Remove from history so AIAgent sees it as the new prompt
+                conversation_history = [
+                    m for m in conversation_history if m is not msg
+                ]
+                break
+    
     if not user_message:
         user_message = "Continue with the current task."
 
-    def generate() -> Generator[str, None, None]:
+    # Build system prompt from request + externalized brain
+    system_prompt_parts: list[str] = []
+    if req.systemPrompt:
+        system_prompt_parts.append(req.systemPrompt)
+
+    # Hydrate externalized memories (sorted by importance, highest first)
+    if req.memorySnapshot:
+        sorted_memories = sorted(req.memorySnapshot, key=lambda m: m.importance, reverse=True)
+        memory_lines = [f"- **{m.key}**: {m.content}" for m in sorted_memories]
+        system_prompt_parts.append(
+            "## Your Memories (from previous sessions)\n" + "\n".join(memory_lines)
+        )
+
+    # Hydrate externalized skills
+    if req.skillsIndex:
+        sorted_skills = sorted(req.skillsIndex, key=lambda s: s.importance, reverse=True)
+        skill_lines = [f"- **{s.key}**: {s.content}" for s in sorted_skills]
+        system_prompt_parts.append(
+            "## Your Acquired Skills\n" + "\n".join(skill_lines)
+        )
+
+    # Hydrate Honcho cross-session reasoning insight
+    if req.honchoInsight:
+        system_prompt_parts.append(
+            "## Cross-Session Insights (from Honcho reasoning engine)\n" + req.honchoInsight
+        )
+
+    system_prompt = "\n\n".join(system_prompt_parts) if system_prompt_parts else None
+
+    # Build enabled toolsets — filter through security whitelist
+    safe_toolsets = [t for t in req.enabledToolsets if t in ALLOWED_TOOLSETS and t not in BLOCKED_TOOLSETS]
+
+    async def generate() -> AsyncGenerator[str, None]:
         start = time.time()
         
-        yield system_event(f"Hermes Cloud Worker v0.2.0 — model={req.model}, max_iterations={max_iters}")
+        yield system_event(f"Hermes Cloud Worker v0.6.0 — model={req.model}, max_iterations={max_iters}")
+
+        input_tokens = 0
+        output_tokens = 0
+        total_cost_usd = 0.0
+        iterations = 0
 
         try:
-            # Build Hermes CLI command
-            cmd = [hermes_bin, "--yolo"]
-            
-            # Use profile if specified
-            if req.profileName and req.profileName != "default":
-                cmd.extend(["--profile", req.profileName])
+            from run_agent import AIAgent
 
-            # Add the user message via stdin
-            logger.info("Running: %s", " ".join(cmd))
-            
-            proc = subprocess.Popen(
-                cmd,
-                stdin=subprocess.PIPE,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
-                text=True,
-                env={
-                    **os.environ,
-                    "NOUSRESEARCH_API_KEY": NOUSRESEARCH_API_KEY,
-                },
+            # Create AIAgent in library mode — stateless, no local memory
+            agent = AIAgent(
+                api_key=NOUSRESEARCH_API_KEY,
+                base_url="https://inference-api.nousresearch.com/v1",
+                model=req.model or DEFAULT_MODEL,
+                max_iterations=max_iters,
+                quiet_mode=True,
+                skip_memory=True,           # No ~/.hermes/memories/ — externalized
+                skip_context_files=True,     # No SOUL.md/AGENTS.md injection
+                persist_session=False,       # No session file writes
+                enabled_toolsets=safe_toolsets if safe_toolsets else None,
+                disabled_toolsets=list(BLOCKED_TOOLSETS),
+                ephemeral_system_prompt=system_prompt,
+                session_id=req.runId or str(uuid.uuid4()),
             )
-            
-            # Send the prompt
-            stdout, stderr = proc.communicate(input=user_message, timeout=300)
-            
-            if stdout:
+
+            yield system_event("AIAgent initialized — starting inference")
+
+            # Run the conversation in a thread pool to avoid blocking asyncio
+            loop = asyncio.get_running_loop()
+            result = await loop.run_in_executor(
+                None,
+                lambda: agent.run_conversation(
+                    user_message=user_message,
+                    conversation_history=conversation_history if conversation_history else None,
+                ),
+            )
+
+            # Extract real usage from AIAgent return
+            final_response = result.get("final_response", "")
+            completed = result.get("completed", False)
+            iterations = result.get("api_calls", 0)
+            input_tokens = result.get("prompt_tokens", 0) or result.get("input_tokens", 0)
+            output_tokens = result.get("completion_tokens", 0) or result.get("output_tokens", 0)
+            total_cost_usd = result.get("estimated_cost_usd", 0.0) or 0.0
+
+            if final_response:
                 yield ndjson_line(ExecuteEvent(
                     type="response",
-                    content=stdout.strip(),
+                    content=final_response,
                 ))
-            
-            if stderr and proc.returncode != 0:
-                yield error_event(f"Hermes stderr: {stderr.strip()[:500]}")
-            
-        except subprocess.TimeoutExpired:
-            yield error_event(f"Hermes execution timed out after 300s")
-            try:
-                proc.kill()
-            except Exception:
-                pass
+
+            if not completed:
+                error_msg = result.get("error", "")
+                if error_msg:
+                    yield error_event(f"Agent incomplete: {error_msg}")
+
+        except ImportError as e:
+            logger.error("Library import error: %s", str(e))
+            yield error_event(f"hermes-agent library error: {str(e)}")
         except Exception as e:
             logger.error("Execution error: %s", str(e))
             yield error_event(f"Execution failed: {str(e)}")
@@ -175,13 +264,16 @@ async def execute(req: ExecuteRequest) -> StreamingResponse:
             duration_ms = int((time.time() - start) * 1000)
             yield ndjson_line(ExecuteEvent(
                 type="usage",
-                inputTokens=0,
-                outputTokens=0,
-                totalCostUsd=0,
-                iterations=1,
+                inputTokens=input_tokens,
+                outputTokens=output_tokens,
+                totalCostUsd=total_cost_usd,
+                iterations=iterations,
                 content=f"Duration: {duration_ms}ms",
             ))
-            logger.info("Execute done: agent=%s duration=%dms", req.agentId, duration_ms)
+            logger.info(
+                "Execute done: agent=%s duration=%dms tokens_in=%d tokens_out=%d cost=$%.4f",
+                req.agentId, duration_ms, input_tokens, output_tokens, total_cost_usd,
+            )
 
     return StreamingResponse(
         generate(),

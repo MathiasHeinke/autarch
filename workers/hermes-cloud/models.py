@@ -7,6 +7,14 @@ from typing import Optional
 from config import ALLOWED_TOOLSETS, BLOCKED_TOOLSETS, MAX_ITERATIONS_HARD_CAP
 
 
+class MemoryEntry(BaseModel):
+    """Single externalized memory/skill from the Paperclip DB."""
+    key: str
+    content: str
+    category: str = "memory"  # memory | skill | conversation
+    importance: int = 50
+
+
 class ExecuteRequest(BaseModel):
     """Incoming execution request from Autarch adapter."""
     agentId: str
@@ -18,6 +26,13 @@ class ExecuteRequest(BaseModel):
     enabledToolsets: list[str] = Field(default_factory=lambda: ["web", "file", "memory"])
     maxIterations: int = Field(default=20, ge=1, le=MAX_ITERATIONS_HARD_CAP)
     costCapPerRun: float = Field(default=5.0, gt=0)
+
+    # Externalized Brain — injected by adapter from Paperclip DB
+    memorySnapshot: list[MemoryEntry] = Field(default_factory=list)
+    skillsIndex: list[MemoryEntry] = Field(default_factory=list)
+
+    # Honcho — cross-session reasoning insight (optional)
+    honchoInsight: Optional[str] = None
 
     @field_validator("enabledToolsets")
     @classmethod
