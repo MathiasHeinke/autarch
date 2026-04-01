@@ -37,7 +37,7 @@ export async function execute(ctx: AdapterExecutionContext): Promise<AdapterExec
     throw new Error("hermes_cloud adapter: missing workerUrl or HERMES_CLOUD_WORKER_URL env");
   }
 
-  const model = asString(config.model, "hermes-4-405b");
+  const model = asString(config.model, "nousresearch/hermes-4-405b");
   const maxIterations = Math.min(asNumber(config.maxIterations, 20), 50); // Hard cap: 50
   const costCapPerRun = asNumber(config.costCapPerRun, 5.0); // Default: $5.00
   const timeoutMs = asNumber(config.timeoutMs, 300_000); // Default: 5 min
@@ -55,6 +55,17 @@ export async function execute(ctx: AdapterExecutionContext): Promise<AdapterExec
   }
 
   // --- Build request payload ---
+  // Extract externalized brain data injected by heartbeat service
+  const memorySnapshot = Array.isArray((context as Record<string, unknown>)?.hermesMemorySnapshot)
+    ? (context as Record<string, unknown>).hermesMemorySnapshot
+    : [];
+  const skillsIndex = Array.isArray((context as Record<string, unknown>)?.hermesSkillsIndex)
+    ? (context as Record<string, unknown>).hermesSkillsIndex
+    : [];
+  const honchoInsight = typeof (context as Record<string, unknown>)?.hermesHonchoInsight === "string"
+    ? (context as Record<string, string>).hermesHonchoInsight
+    : undefined;
+
   const payload = {
     agentId: agent.id,
     runId,
@@ -65,6 +76,9 @@ export async function execute(ctx: AdapterExecutionContext): Promise<AdapterExec
     enabledToolsets,
     maxIterations,
     costCapPerRun,
+    memorySnapshot,
+    skillsIndex,
+    ...(honchoInsight ? { honchoInsight } : {}),
   };
 
   // --- Execute with timeout ---
@@ -74,7 +88,10 @@ export async function execute(ctx: AdapterExecutionContext): Promise<AdapterExec
   try {
     const res = await fetch(`${workerUrl}/v1/execute`, {
       method: "POST",
-      headers: { "content-type": "application/json" },
+      headers: {
+        "content-type": "application/json",
+        "x-hermes-secret": process.env.HERMES_CLOUD_SECRET ?? "",
+      },
       body: JSON.stringify(payload),
       signal: controller.signal,
     });

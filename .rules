@@ -1,0 +1,65 @@
+# Antigravity Workspace Rules für Paperclip (Autarch)
+
+Diese Datei definiert die grundlegenden Start- und Verhaltensregeln für den Developer/Autarch Projekt-Workspace. Sie verknüpft die Prinzipien des Antigravity Kits mit den spezifischen Architektur- und Entwicklungsrichtlinien des Paperclip-Projekts.
+
+## 1. Das Antigravity Kit (Der Bootloader)
+Das Antigravity Kit ist der Brain-Kernel dieses Workspaces und wurde in das Verzeichnis `.antigravity/` initialisiert. 
+
+**Pflichtlektüre vor Start der Entwicklung (Layer 0 & 1):**
+Bei jedem Konversationsstart oder Architektur-Wechsel MUSST du zwingend folgende Dateien konsultieren:
+1. `.antigravity/system-prompt.md` (NOUS Meta-Orchestrator Boot-Config)
+2. `.antigravity/personas/nous.md` (Die Identität des Orchestrators)
+3. `.antigravity/copy-rules.md` (Wording- & Branding-Guides)
+4. `.antigravity/tech-stack-context.md` (Spezifische Stack-Definitionen)
+5. `.antigravity/agentic-router.md` (Dispatcher für 21 Personas & 6 Mastertables)
+
+Jeder weiterführende Workflow (z. B. Audits, Releases oder Security-Checks) liegt in `.antigravity/workflows/`. Die Wissensbank (Memory Bank) liegt in `.antigravity/knowledge/`. Du darfst je nach situativem Kontext über den Router (`@nous`, `/nous-lifecycle`) die relevanten Personas und Workflows on-demand nachladen.
+
+---
+
+## 2. Projekt-Richtlinien (Autarch / Paperclip)
+Das Projekt **Paperclip** ist die Control Plane (Kontrollinstanz) für KI-Agenten-Unternehmen. Jedes Feature, jede Domain und jedes Datenelement *muss* Unternehmens-bezogen (`company-scoped`) sein.
+
+**Wichtigste Referenz-Dokumente:**
+1. `doc/GOAL.md` (Mission & Vision)
+2. `doc/PRODUCT.md` (Produkt-Scope)
+3. `doc/SPEC-implementation.md` (Das zentrale V1-Bau-Dokument)
+4. `doc/DEVELOPING.md` (Entwickler-Richtlinien)
+5. `doc/DATABASE.md` (Datenbank-Architektur)
+6. `AGENTS.md` (Core Engineering Rules & Deployment-Schnittstellen)
+
+---
+
+## 3. Entwicklungs-Grenzen & Bau-Regeln (Tech & DevOps)
+Dein Rahmen als Entwicklungs-Instanz in diesem Projekt unterliegt strikten Limits und Workflows:
+
+### A) Database Change Workflow
+- Schema-Anpassungen erfolgen *nur* in `packages/db/src/schema/*.ts`.
+- Exports müssen in `packages/db/src/schema/index.ts` angemeldet sein.
+- **Befehl für DB-Generierung:** `pnpm db:generate`
+- Lokale dev DB wird via eingebettetem PGlite ohne gesetzte `DATABASE_URL` betrieben (Reset via `rm -rf data/pglite && pnpm dev`).
+
+### B) Architektur-Erhaltung (Invariants)
+Du hast die strikte Vorgabe, die Core-Patterns des Systems unter keinen Umständen auszuhebeln:
+- **Scope:** Routen & Services müssen Company Boundaries strikt durchsetzen.
+- **Atomic Operations:** Task Assignments & Issue Checkouts müssen atomare Transaktionen sein.
+- **Budget Control:** Hard-Stop Auto-Pause Logiken dürfen nicht by-passed werden.
+- **Logging:** Jede Mutationsaktion benötigt Activity Logs.
+
+### C) API & Authentication Limits
+- Alle APIs unterliegen `/api`. 
+- **Board vs. Agent:** "Board Access" ist der Operator, "Agent Access" läuft über gehashte Bearer-Keys (`agent_api_keys`). Keine Vermischung der Rollen. Agent-Keys duerfen keine firmenübergreifenden Ressourcen aufrufen!
+
+### D) "Definition of Done" Gate
+Bevor ein Task als abgeschlossen gemeldet wird (Handoff), MÜSSEN folgende Befehle fehlerfrei durchlaufen:
+```bash
+pnpm -r typecheck
+pnpm test:run
+pnpm build
+```
+Schlägt etwas fehl, darfst du den Task nicht blind absegnen.
+
+---
+
+## Zusammenfassung
+Du bist der Implementierungs-Agent für **Paperclip** im `autarch`-Workspace. Dein "Gehirn" ist das **Antigravity Kit** (Layer 0 & 1), und die Blaupausen (Blueprints) für deine Arbeit sind die Core-Architektur-Specs (`SPEC-implementation.md`). Deine Handlungen werden über den `/init` oder `/nous-lifecycle` Workflow und die strikten Engineering-Regeln reguliert. Halte die Unternehmens-Isolierung (`company-scoped`) als oberstes Gesetz ein.

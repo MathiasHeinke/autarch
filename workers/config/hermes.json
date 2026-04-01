@@ -1,0 +1,70 @@
+{
+  "model": {
+    "provider": "openrouter",
+    "model": "nousresearch/hermes-4-405b"
+  },
+  "model_fallback": {
+    "provider": "nousresearch",
+    "api_base": "https://inference-api.nousresearch.com/v1",
+    "api_key": "${NOUSRESEARCH_API_KEY}",
+    "model": "Hermes-4-405B"
+  },
+  "reasoning": {
+    "enabled": true,
+    "show_thinking": true,
+    "budget_tokens": 16384
+  },
+  "tools": {
+    "web": true,
+    "file": true,
+    "code": true,
+    "browser": true,
+    "vision": true,
+    "memory": true,
+    "skills": true,
+    "delegation": true,
+    "todo": true,
+    "terminal": true
+  },
+  "local_tools": {
+    "whisper": {
+      "command": "insanely-fast-whisper",
+      "args_template": "--file-name $INPUT --device-id mps --batch-size 4 --language de -o $OUTPUT",
+      "description": "Lokale Audio-Transkription via Whisper Large v3 (Apple MPS)",
+      "formats": ["mp3", "wav", "m4a", "ogg", "flac"]
+    },
+    "markitdown": {
+      "command": "markitdown",
+      "args_template": "$INPUT -o $OUTPUT",
+      "description": "Dateiformat → LLM-lesbares Markdown (Microsoft)",
+      "formats": ["pdf", "docx", "pptx", "xlsx", "html", "csv", "json", "xml", "zip", "epub"]
+    }
+  },
+  "mcp": {
+    "servers": [
+      {
+        "name": "apify",
+        "description": "Web scraping and automation via Apify",
+        "command": "npx",
+        "args": ["-y", "@apify/actors-mcp-server"],
+        "env": {
+          "APIFY_API_KEY": "${APIFY_API_KEY}"
+        }
+      }
+    ]
+  },
+  "cron": {
+    "daily_research": {
+      "schedule": "0 8 * * *",
+      "prompt": "Run the longevity-research skill and save results"
+    },
+    "weekly_competitors": {
+      "schedule": "0 9 * * 1",
+      "prompt": "Run the competitor-watch skill and compare with last week"
+    },
+    "daily_social": {
+      "schedule": "0 10 * * *",
+      "prompt": "Run the social-listening skill for today"
+    }
+  }
+}

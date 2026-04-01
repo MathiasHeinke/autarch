@@ -22,6 +22,7 @@ import {
 import { cn } from "@/lib/utils";
 import { OpenCodeLogoIcon } from "./OpenCodeLogoIcon";
 import { HermesIcon } from "./HermesIcon";
+import { HERMES_ONLY_MODE } from "@/lib/featureFlags";
 
 type AdvancedAdapterType =
   | "claude_local"
@@ -119,10 +120,16 @@ export function NewAgentDialog() {
     setShowAdvancedCards(true);
   }
 
-  function handleAdvancedAdapterPick(adapterType: AdvancedAdapterType) {
+  function handleAdvancedAdapterPick(adapterType: AdvancedAdapterType | "hermes_cloud") {
     closeNewAgent();
     setShowAdvancedCards(false);
     navigate(`/agents/new?adapterType=${encodeURIComponent(adapterType)}`);
+  }
+
+  // HERMES_ONLY_MODE: skip adapter picker, go straight to hermes_cloud
+  function handleHermesOnlyCreate() {
+    closeNewAgent();
+    navigate(`/agents/new?adapterType=hermes_cloud`);
   }
 
   return (
@@ -156,7 +163,24 @@ export function NewAgentDialog() {
         </div>
 
         <div className="p-6 space-y-6">
-          {!showAdvancedCards ? (
+          {HERMES_ONLY_MODE ? (
+            <>
+              {/* Enterprise mode: single-click Hermes agent creation */}
+              <div className="text-center space-y-3">
+                <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-accent">
+                  <HermesIcon className="h-6 w-6" />
+                </div>
+                <p className="text-sm font-medium">Create Hermes Agent</p>
+                <p className="text-xs text-muted-foreground">
+                  Hermes is your AI agent — powered by NousResearch.
+                </p>
+              </div>
+              <Button className="w-full" size="lg" onClick={handleHermesOnlyCreate}>
+                <Sparkles className="h-4 w-4 mr-2" />
+                Create Agent
+              </Button>
+            </>
+          ) : !showAdvancedCards ? (
             <>
               {/* Recommendation */}
               <div className="text-center space-y-3">

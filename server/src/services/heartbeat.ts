@@ -2624,6 +2624,37 @@ export function heartbeatService(db: Db) {
           "local agent jwt secret missing or invalid; running without injected PAPERCLIP_API_KEY",
         );
       }
+      // --- Externalized Brain: pre-load memories for hermes_cloud ---
+      if (agent.adapterType === "hermes_cloud") {
+        try {
+          const { loadAgentMemories } = await import("../adapters/hermes-cloud/memory-lifecycle.js");
+          const memoryResult = await loadAgentMemories(db, agent.companyId, agent.id);
+          if (memoryResult.memorySnapshot.length > 0 || memoryResult.skillsIndex.length > 0) {
+            context.hermesMemorySnapshot = memoryResult.memorySnapshot;
+            context.hermesSkillsIndex = memoryResult.skillsIndex;
+            await onLog(
+              "stdout",
+              `[memory] Loaded ${memoryResult.memorySnapshot.length} memories + ${memoryResult.skillsIndex.length} skills\n`,
+            );
+          }
+
+          // --- Honcho: enrich context with cross-session reasoning insights ---
+          try {
+            const { queryAgentInsights } = await import("../adapters/hermes-cloud/honcho-client.js");
+            const insight = await Promise.race([
+              queryAgentInsights(agent.companyId, agent.id),
+              new Promise<null>((resolve) => setTimeout(() => resolve(null), 5000)),
+            ]);
+            if (insight?.content) {
+              context.hermesHonchoInsight = insight.content;
+              await onLog("stdout", `[honcho] Injected cross-session reasoning insight\n`);
+            }
+          } catch { /* Honcho not configured — skip */ }
+        } catch (memErr) {
+          logger.warn({ err: memErr, agentId: agent.id }, "Failed to pre-load agent memories — proceeding without");
+        }
+      }
+
       const adapterResult = await adapter.execute({
         runId: run.id,
         agent,
@@ -2685,6 +2716,38 @@ export function heartbeatService(db: Db) {
           }
         }
       }
+      // --- Externalized Brain: post-persist new memories for hermes_cloud ---
+      if (agent.adapterType === "hermes_cloud" && stdoutExcerpt) {
+        try {
+          const { persistNewMemories } = await import("../adapters/hermes-cloud/memory-lifecycle.js");
+          const ndjsonLines = stdoutExcerpt.split("\n").filter((l) => l.trim().length > 0);
+          const persisted = await persistNewMemories(db, agent.companyId, agent.id, run.id, ndjsonLines);
+          if (persisted > 0) {
+            await onLog("stdout", `[memory] Persisted ${persisted} new memories\n`);
+          }
+
+          // --- Honcho: async conversation ingestion for cross-session reasoning ---
+          try {
+            const { ingestRunConversation } = await import("../adapters/hermes-cloud/honcho-client.js");
+            const messages: Array<{ role: "user" | "assistant"; content: string }> = [];
+            for (const line of ndjsonLines) {
+              try {
+                const evt = JSON.parse(line);
+                if (evt.type === "message" && evt.role && evt.content) {
+                  messages.push({ role: evt.role, content: evt.content });
+                }
+              } catch { /* skip non-JSON */ }
+            }
+            if (messages.length > 0) {
+              // Fire-and-forget — never block run completion
+              void ingestRunConversation(agent.companyId, agent.id, run.id, messages);
+            }
+          } catch { /* Honcho not configured — skip */ }
+        } catch (memErr) {
+          logger.warn({ err: memErr, agentId: agent.id }, "Failed to post-persist agent memories");
+        }
+      }
+
       const nextSessionState = resolveNextSessionState({
         codec: sessionCodec,
         adapterResult,
