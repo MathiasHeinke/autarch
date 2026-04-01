@@ -78,7 +78,7 @@
 - [x] End-to-End-Test: Task → Heartbeat → Worker → Memory → Honcho. ✅ (2026-04-01, 16/16 Steps)
 
 ### P1 — Integration Completion
-- [ ] Worker Agents (23 Persona-Dirs) auf Library Mode migrieren.
+- [x] Worker Agents (23 Persona-Dirs) auf Library Mode migrieren. ✅ (2026-04-02 — soul-loader.ts, profileName → SOUL.md + AGENTS.md + HEARTBEAT.md in System-Prompt)
 - [ ] Custom Autarch-MCP-Server implementieren (Supabase-Zugriff).
 - [ ] Heartbeat-Cron im Orchestrator aktivieren (5-Min-Intervall).
 
