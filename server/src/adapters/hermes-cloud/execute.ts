@@ -1,5 +1,6 @@
 import type { AdapterExecutionContext, AdapterExecutionResult } from "../types.js";
 import { scrubContextMessages } from "./pii-scrub.js";
+import { buildSoulSystemPrompt } from "./soul-loader.js";
 
 /**
  * Hermes Cloud Adapter — execute
@@ -43,7 +44,17 @@ export async function execute(ctx: AdapterExecutionContext): Promise<AdapterExec
   const timeoutMs = asNumber(config.timeoutMs, 300_000); // Default: 5 min
   const enabledToolsets = sanitizeToolsets(config.enabledToolsets);
   const profileName = asString(config.profileName, `company-${agent.companyId ?? "default"}`);
-  const systemPrompt = asString(config.systemPrompt, "");
+  const configSystemPrompt = asString(config.systemPrompt, "");
+
+  // --- Soul profile: injected by heartbeat pre-load via context.hermesAgentSoul ---
+  // When no explicit systemPrompt is configured, the soul profile IS the system prompt.
+  // When an explicit systemPrompt is configured, soul prepends it (soul sets persona; prompt sets task).
+  const soulPrefix = typeof (context as Record<string, unknown>)?.hermesAgentSoul === "string"
+    ? buildSoulSystemPrompt(
+        JSON.parse((context as Record<string, string>).hermesAgentSoul) as Parameters<typeof buildSoulSystemPrompt>[0]
+      )
+    : "";
+  const systemPrompt = soulPrefix + configSystemPrompt;
 
   // --- PII Scrub context messages ---
   const contextMessages = Array.isArray((context as Record<string, unknown>)?.messages)

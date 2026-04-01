@@ -2650,6 +2650,26 @@ export function heartbeatService(db: Db) {
               await onLog("stdout", `[honcho] Injected cross-session reasoning insight\n`);
             }
           } catch { /* Honcho not configured — skip */ }
+
+          // --- Soul Profile: load SOUL.md + AGENTS.md + HEARTBEAT.md for this agent ---
+          try {
+            const { loadAgentSoul } = await import("../adapters/hermes-cloud/soul-loader.js");
+            const agentConfig = parseObject(agent.adapterConfig);
+            const profileName = typeof agentConfig?.profileName === "string" && agentConfig.profileName.length > 0
+              ? agentConfig.profileName
+              : null;
+            if (profileName) {
+              const soulResult = await loadAgentSoul(profileName);
+              if (soulResult) {
+                context.hermesAgentSoul = JSON.stringify(soulResult);
+                await onLog("stdout", `[soul] Loaded profile "${profileName}" (SOUL.md${soulResult.agents ? " + AGENTS.md" : ""}${soulResult.heartbeat ? " + HEARTBEAT.md" : ""})\\n`);
+              } else {
+                await onLog("stdout", `[soul] No profile found for "${profileName}" — running without persona\\n`);
+              }
+            }
+          } catch (soulErr) {
+            logger.warn({ err: soulErr, agentId: agent.id }, "Failed to load soul profile — proceeding without");
+          }
         } catch (memErr) {
           logger.warn({ err: memErr, agentId: agent.id }, "Failed to pre-load agent memories — proceeding without");
         }
