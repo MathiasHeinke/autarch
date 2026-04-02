@@ -1,59 +1,55 @@
-FROM node:lts-trixie-slim AS base
-RUN apt-get update \
-  && apt-get install -y --no-install-recommends ca-certificates curl git \
-  && rm -rf /var/lib/apt/lists/*
-RUN corepack enable
-
-FROM base AS deps
+# ─── Paperclip Server — Cloud Run Dockerfile (pre-built) ───
+# Uses pre-built dist/ artifacts from the monorepo
+FROM node:22-slim
+RUN corepack enable && corepack prepare pnpm@9.15.4 --activate
 WORKDIR /app
-COPY package.json pnpm-workspace.yaml pnpm-lock.yaml .npmrc ./
-COPY cli/package.json cli/
-COPY server/package.json server/
-COPY ui/package.json ui/
-COPY packages/shared/package.json packages/shared/
-COPY packages/db/package.json packages/db/
-COPY packages/adapter-utils/package.json packages/adapter-utils/
-COPY packages/adapters/claude-local/package.json packages/adapters/claude-local/
-COPY packages/adapters/codex-local/package.json packages/adapters/codex-local/
-COPY packages/adapters/cursor-local/package.json packages/adapters/cursor-local/
-COPY packages/adapters/gemini-local/package.json packages/adapters/gemini-local/
-COPY packages/adapters/openclaw-gateway/package.json packages/adapters/openclaw-gateway/
-COPY packages/adapters/opencode-local/package.json packages/adapters/opencode-local/
-COPY packages/adapters/pi-local/package.json packages/adapters/pi-local/
-COPY packages/plugins/sdk/package.json packages/plugins/sdk/
+
+# Copy full monorepo (dist/ already built locally)
+COPY pnpm-workspace.yaml package.json pnpm-lock.yaml ./
 COPY patches/ patches/
+COPY packages/ packages/
+COPY server/ server/
+COPY cli/package.json cli/
+COPY ui/package.json ui/
 
-RUN pnpm install --frozen-lockfile
+# Install all dependencies (tsx needed as runtime TS loader)
+RUN pnpm install --no-frozen-lockfile --ignore-scripts
 
-FROM base AS build
-WORKDIR /app
-COPY --from=deps /app /app
-COPY . .
-RUN pnpm --filter @paperclipai/ui build
-RUN pnpm --filter @paperclipai/plugin-sdk build
-RUN pnpm --filter @paperclipai/server build
-RUN test -f server/dist/index.js || (echo "ERROR: server build output missing" && exit 1)
+# Create Paperclip home directory structure
+RUN mkdir -p /app/.paperclip/instances/default/data/storage \
+    /app/.paperclip/instances/default/data/backups \
+    /app/.paperclip/instances/default/logs \
+    /app/.paperclip/instances/default/secrets
 
-FROM base AS production
-WORKDIR /app
-COPY --chown=node:node --from=build /app /app
-RUN npm install --global --omit=dev @anthropic-ai/claude-code@latest @openai/codex@latest opencode-ai \
-  && mkdir -p /paperclip \
-  && chown node:node /paperclip
+# Cloud Run environment
+ENV PORT=8080
+ENV NODE_ENV=production
+ENV PAPERCLIP_HOME=/app/.paperclip
+ENV PAPERCLIP_INSTANCE_ID=default
+ENV PAPERCLIP_MIGRATION_AUTO_APPLY=true
 
-ENV NODE_ENV=production \
-  HOME=/paperclip \
-  HOST=0.0.0.0 \
-  PORT=3100 \
-  SERVE_UI=true \
-  PAPERCLIP_HOME=/paperclip \
-  PAPERCLIP_INSTANCE_ID=default \
-  PAPERCLIP_CONFIG=/paperclip/instances/default/config.json \
-  PAPERCLIP_DEPLOYMENT_MODE=authenticated \
-  PAPERCLIP_DEPLOYMENT_EXPOSURE=private
+# Write cloud config.json
+RUN printf '{\n\
+  "$meta": { "version": 1, "source": "cloud-run" },\n\
+  "database": { "mode": "postgres", "backup": { "enabled": false } },\n\
+  "logging": { "mode": "stdout" },\n\
+  "server": {\n\
+    "deploymentMode": "local_trusted",\n\
+    "exposure": "public",\n\
+    "host": "0.0.0.0",\n\
+    "port": 8080,\n\
+    "allowedHostnames": [],\n\
+    "serveUi": false\n\
+  },\n\
+  "auth": { "baseUrlMode": "auto", "disableSignUp": false },\n\
+  "storage": {\n\
+    "provider": "local_disk",\n\
+    "localDisk": { "baseDir": "/app/.paperclip/instances/default/data/storage" }\n\
+  },\n\
+  "secrets": { "provider": "env", "strictMode": false }\n\
+}' > /app/.paperclip/instances/default/config.json
 
-VOLUME ["/paperclip"]
-EXPOSE 3100
+EXPOSE 8080
 
-USER node
-CMD ["node", "--import", "./server/node_modules/tsx/dist/loader.mjs", "server/dist/index.js"]
+WORKDIR /app/server
+CMD ["./node_modules/.bin/tsx", "src/index.ts"]

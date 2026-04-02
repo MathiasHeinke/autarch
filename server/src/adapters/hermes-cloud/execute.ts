@@ -43,7 +43,9 @@ export async function execute(ctx: AdapterExecutionContext): Promise<AdapterExec
   const costCapPerRun = asNumber(config.costCapPerRun, 5.0); // Default: $5.00
   const timeoutMs = asNumber(config.timeoutMs, 300_000); // Default: 5 min
   const enabledToolsets = sanitizeToolsets(config.enabledToolsets);
-  const profileName = asString(config.profileName, `company-${agent.companyId ?? "default"}`);
+  // NOTE: Deployed Cloud Run worker uses Hermes CLI with only 'default' profile.
+  // Until worker is redeployed with stateless library mode, we route all runs to 'default'.
+  const profileName = asString(config.profileName, "default");
   const configSystemPrompt = asString(config.systemPrompt, "");
 
   // --- Soul profile: injected by heartbeat pre-load via context.hermesAgentSoul ---

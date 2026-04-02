@@ -207,10 +207,15 @@ async def execute(
             from run_agent import AIAgent
 
             # Create AIAgent in library mode — stateless, no local memory
+            # Resolve model name — prepend nousresearch/ if no provider prefix
+            resolved_model = req.model or DEFAULT_MODEL
+            if "/" not in resolved_model:
+                resolved_model = f"nousresearch/{resolved_model}"
+
             agent = AIAgent(
                 api_key=NOUSRESEARCH_API_KEY,
                 base_url="https://inference-api.nousresearch.com/v1",
-                model=req.model or DEFAULT_MODEL,
+                model=resolved_model,
                 max_iterations=max_iters,
                 quiet_mode=True,
                 skip_memory=True,           # No ~/.hermes/memories/ — externalized

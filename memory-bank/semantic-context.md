@@ -331,6 +331,37 @@ git merge upstream/main  # Konflikte NUR in workers/hermes-cloud/ + memory-bank/
 
 ## 7. Session-Chronik (neueste zuerst)
 
+### 2026-04-02 — /ship-it: Paperclip Server → Cloud Run LIVE
+
+**Pilot:** Mathias Heinke
+**Aufgabe:** Paperclip Server als Cloud Run Service deployen + Vercel API Proxy konfigurieren
+
+**Geänderte Module:**
+- `Dockerfile` — Multi-stage pnpm Docker Build, tsx aus `./node_modules/.bin/tsx`, WORKDIR /app/server
+- `.gcloudignore` — dist/ inkludiert, node_modules exkludiert
+- `server/Dockerfile` — Legacy Dockerfile Referenz
+- `vercel.json` — API rewrites → `https://paperclip-server-61066913791.europe-west1.run.app/api/*`
+- `server/src/adapters/hermes-cloud/execute.ts` — Cloud Worker URL Anpassung
+- `workers/hermes-cloud/main.py` — Worker-Fixes
+- `memory-bank/e2e-master-plan.md` — [NEU] E2E-Masterplan
+
+**Erkenntnisse:**
+- `tsx: not found` → `npx tsx` nicht global verfügbar in Docker, Lösung: `./node_modules/.bin/tsx`
+- **127.0.0.1 vs 0.0.0.0:** Paperclip `local_trusted` mode enforced loopback. Cloud Run braucht 0.0.0.0. Fix: `PAPERCLIP_DEPLOYMENT_MODE=authenticated` + `HOST=0.0.0.0`
+- Hostname-Whitelist: Cloud Run Domain muss über `PAPERCLIP_ALLOWED_HOSTNAMES` freigeschaltet werden
+- `authenticated` public exposure braucht `auth.baseUrlMode=explicit` — für private reicht `auto`
+
+**Abhängigkeiten entdeckt:**
+- `config.ts:219` — `HOST` env var → `server.host` binding (nicht in fileConfig.server.host ohne HOST env)
+- `index.ts:426` — `local_trusted` + non-loopback = throw Error (Guard Clause)
+- `BETTER_AUTH_SECRET` oder `PAPERCLIP_AGENT_JWT_SECRET` erforderlich für authenticated mode
+
+**Entscheidungen:**
+- Server deployed als `authenticated` + `private` (Cloud Run IAM = unauthenticated, App-Level Auth via Better Auth)
+- `PAPERCLIP_ALLOWED_HOSTNAMES` als Env-Var statt config.json
+
+---
+
 ### 2026-04-02 — /ship-it: soul-loader.ts — G-008 CLOSED
 
 **Pilot:** Mathias Heinke ("ok go")
