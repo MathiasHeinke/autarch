@@ -90,7 +90,6 @@ export async function persistNewMemories(
   runId: string,
   ndjsonLines: string[],
 ): Promise<number> {
-  // Look for memory_save events in the NDJSON stream
   const newMemories: Array<{
     key: string;
     content: string;
@@ -98,19 +97,37 @@ export async function persistNewMemories(
     importance: number;
   }> = [];
 
+  // ---- Helper: extract memory from a parsed tool-call input ----
+  function extractMemoryFromInput(input: Record<string, unknown>): void {
+    const name = (input.name as string) ?? "";
+    // Accept both "memory" (correct) and "save_memory" (legacy)
+    if (name !== "memory" && name !== "save_memory" && name !== "") return;
+
+    const action = (input.action as string) ?? "add";
+    if (action !== "add" && action !== "replace") return;
+
+    newMemories.push({
+      key: (input.key as string) ?? `auto-${Date.now()}`,
+      content: (input.content as string) ?? (input.memory as string) ?? "",
+      category: input.target === "user" ? "user" : ((input.category as string) ?? "memory"),
+      importance: (input.importance as number) ?? 50,
+    });
+  }
+
+  // ---- Regex for Hermes XML-style <tool_call> tags in response text ----
+  const toolCallTagRe = /<tool_call>\s*(\{[\s\S]*?\})\s*<\/tool_call>/g;
+
   for (const line of ndjsonLines) {
     try {
       const event = JSON.parse(line);
-      // Hermes emits tool_call events for memory operations.
-      // The memory tool is named "memory" (NOT "save_memory").
-      // It uses: { action: "add"|"replace"|"remove", target: "memory"|"user", key, content }
+
+      // Path 1: Structured NDJSON tool_call events (OpenAI/Anthropic format)
       if (
         event.type === "tool_call" &&
         event.name === "memory" &&
         event.input
       ) {
         const action = event.input.action ?? "add";
-        // Only persist add/replace actions (skip "remove" — handled separately if needed)
         if (action === "add" || action === "replace") {
           newMemories.push({
             key: event.input.key ?? `auto-${Date.now()}`,
@@ -118,6 +135,23 @@ export async function persistNewMemories(
             category: event.input.target === "user" ? "user" : (event.input.category ?? "memory"),
             importance: event.input.importance ?? 50,
           });
+        }
+      }
+
+      // Path 2: Hermes-4-405B embeds tool_calls as <tool_call>{JSON}</tool_call>
+      // in the response text.  This is the primary path for NousResearch models.
+      if (event.type === "response" && typeof event.content === "string") {
+        let match: RegExpExecArray | null;
+        while ((match = toolCallTagRe.exec(event.content)) !== null) {
+          try {
+            const parsed = JSON.parse(match[1]);
+            if (parsed.name === "memory" || parsed.name === "save_memory") {
+              const args = parsed.arguments ?? parsed;
+              extractMemoryFromInput({ name: parsed.name, ...args });
+            }
+          } catch {
+            // Malformed JSON inside <tool_call> — skip
+          }
         }
       }
     } catch {
