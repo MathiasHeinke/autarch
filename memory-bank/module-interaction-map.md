@@ -1,12 +1,14 @@
 # 🔀 Module Interaction Map — Deep Research v4
 
-> Generiert: 2026-04-01
+> Generiert: 2026-04-01 | Letztes Update: 2026-04-02
 
 ## Pipeline 1: Agent Heartbeat Execution
 
 ```mermaid
 flowchart TD
     CRON[Cron Scheduler] --> HB[heartbeat.ts]
+    HB --> |0. Hydrate Context| CTX[issue body + comments → context.messages]
+    CTX --> |issueComments table| DB2[(issues + issueComments)]
     HB --> |1. Load Memory| ML[memory-lifecycle.ts]
     ML --> |loadAgentMemories| DB[(agent_memory)]
     HB --> |2. Query Honcho| HC[honcho-client.ts]

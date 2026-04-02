@@ -50,6 +50,11 @@
 
 > *IMMER einen Eintrag schreiben — auch bei kleinen Fixes.*
 
+### Session 2026-04-02 — /hotfix: Context-Loss Bug — Hermes Agent bekommt Task-Kontext (KRITISCH)
+- **Thema:** Hermes-4-405B Worker erhielt nie den Issue-Body oder Kommentare. Deep E2E Test (ARE-2) hat den Bug zweifelsfrei isoliert.
+- **Ergebnis:** `heartbeat.ts`: `description` zu issueContext-Query hinzugefügt + Context-Hydration-Pipeline (Issue-Body + 20 Comments → context.messages). Import `issueComments` aus `@paperclipai/db`. `module-interaction-map.md` Step 0 dokumentiert. tsc clean. SG-016 in semantic-context.
+- **Offene Punkte:** Deploy auf Cloud Run. ARE-2 Deep Thinking Retest. Memory-Persistence Validierung.
+
 ### Session 2026-04-02 — /ship-it: soul-loader.ts — G-008 CLOSED
 - **Thema:** workers/agents/{profileName}/SOUL.md in Hermes-Execution verdrahten. "ok go" vom Founder.
 - **Ergebnis:** soul-loader.ts (neu), execute.ts (soul prefix), heartbeat.ts (pre-load hook). typecheck Exit 0. 3 Commits. G-008 in semantic-context.md geschlossen. progress.md updated. Alle Memory-Dateien synchron.

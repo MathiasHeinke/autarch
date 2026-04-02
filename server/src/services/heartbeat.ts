@@ -12,6 +12,7 @@ import {
   agentWakeupRequests,
   heartbeatRunEvents,
   heartbeatRuns,
+  issueComments,
   issues,
   projects,
   projectWorkspaces,
@@ -2059,6 +2060,7 @@ export function heartbeatService(db: Db) {
             id: issues.id,
             identifier: issues.identifier,
             title: issues.title,
+            description: issues.description,
             projectId: issues.projectId,
             projectWorkspaceId: issues.projectWorkspaceId,
             executionWorkspaceId: issues.executionWorkspaceId,
@@ -2627,6 +2629,54 @@ export function heartbeatService(db: Db) {
       // --- Externalized Brain: pre-load memories for hermes_cloud ---
       if (agent.adapterType === "hermes_cloud") {
         try {
+          // --- Issue Context Hydration: inject issue body + comments as context.messages ---
+          if (issueId && issueContext) {
+            const issueMessages: Array<{ role: string; content: string }> = [];
+            // Issue body = first user message (the task prompt)
+            if (issueContext.title || issueContext.description) {
+              const bodyParts: string[] = [];
+              if (issueContext.identifier) bodyParts.push(`[${issueContext.identifier}]`);
+              if (issueContext.title) bodyParts.push(issueContext.title);
+              if (issueContext.description) bodyParts.push(`\n\n${issueContext.description}`);
+              issueMessages.push({ role: "user", content: bodyParts.join(" ").trim() });
+            }
+            // Recent comments = conversation history
+            try {
+              const recentComments = await db
+                .select({
+                  body: issueComments.body,
+                  authorAgentId: issueComments.authorAgentId,
+                  createdAt: issueComments.createdAt,
+                })
+                .from(issueComments)
+                .where(
+                  and(
+                    eq(issueComments.issueId, issueId),
+                    eq(issueComments.companyId, agent.companyId),
+                  ),
+                )
+                .orderBy(asc(issueComments.createdAt))
+                .limit(20);
+              for (const comment of recentComments) {
+                if (comment.body) {
+                  issueMessages.push({
+                    role: comment.authorAgentId ? "assistant" : "user",
+                    content: comment.body,
+                  });
+                }
+              }
+            } catch (commentErr) {
+              logger.warn({ err: commentErr, issueId }, "Failed to load issue comments for hermes context");
+            }
+            if (issueMessages.length > 0) {
+              context.messages = issueMessages;
+              await onLog(
+                "stdout",
+                `[context] Injected issue body + ${issueMessages.length - 1} comment(s) as context messages\n`,
+              );
+            }
+          }
+
           const { loadAgentMemories } = await import("../adapters/hermes-cloud/memory-lifecycle.js");
           const memoryResult = await loadAgentMemories(db, agent.companyId, agent.id);
           if (memoryResult.memorySnapshot.length > 0 || memoryResult.skillsIndex.length > 0) {

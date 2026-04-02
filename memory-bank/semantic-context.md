@@ -493,3 +493,18 @@ git merge upstream/main  # Konflikte NUR in workers/hermes-cloud/ + memory-bank/
 - SG-014: NousResearch API direkt (nicht über OpenRouter) für Hermes-4-405B
 - SG-015: Supabase MCP Token in Antigravity IDE für direkte DB-Inspektion
 
+### 2026-04-02 — Ship: fix(heartbeat): Context-Loss Hotfix — Hermes bekommt Issue-Body + Comments
+**Geänderte Module:** `server/src/services/heartbeat.ts`, `memory-bank/module-interaction-map.md`
+**Erkenntnisse:**
+- **ROOT CAUSE ISOLATED:** `issueContext`-Query in heartbeat.ts hatte `description` nie im SELECT. Kein Code-Pfad injizierte Issue-Body/Comments in `context.messages`. Worker fiel immer auf `"Continue with current task"` zurück.
+- Context-Hydration muss VOR Memory-Load passieren (Step 0 in Pipeline 1)
+- Local Adapters sind NICHT betroffen — die nutzen Filesystem/stdin, nicht HTTP context.messages
+- `issueComments` Tabelle hat `body`, `authorAgentId`, `authorUserId`, `createdAt` — reicht für vollständige Konversationshistorie
+**Abhängigkeiten entdeckt:**
+- heartbeat.ts → `issueComments` (neu importiert) → context.messages → Worker `main.py`
+- Worker `run_conversation()` braucht `messages[0].content` als Task-Prompt — ohne ist er blind
+**Entscheidungen:**
+- SG-016: Context-Hydration in heartbeat.ts (nicht im Worker) — Worker bleibt 100% stateless
+- Limit: 20 Comments max pro Heartbeat-Request (verhindert Token-Explosion)
+- Role-Mapping: `authorAgentId ? "assistant" : "user"` — natürliche Konversationshistorie
+
