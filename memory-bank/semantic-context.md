@@ -474,3 +474,22 @@ git merge upstream/main  # Konflikte NUR in workers/hermes-cloud/ + memory-bank/
 > **Maschinelle Lesbarkeit:** Dieses Dokument ist maschinenlesbar optimiert.
 > Alle Future Agents: Lies Section 0 zuerst (Nordstern), dann Section 6 (Navigation), dann die relevante Section.
 > DIRECTIVE-003: Ruthless Efficiency — No Feature Creep.
+
+---
+
+### 2026-04-02 — Ship: Cloud-Native Stack Live (Vercel + Cloud Run + Supabase + Hermes)
+**Geänderte Module:** `.gitignore`, `memory-bank/progress.md`, `memory-bank/e2e-master-plan.md`
+**Infrastruktur:** Cloud Run Worker API Key Fix (`NOUSRESEARCH_API_KEY` → `autarch_os` Key), Supabase MCP Token in Antigravity IDE
+**Erkenntnisse:**
+- NousResearch API Key Validierung: `/v1/models` geht auch mit ungültigem Key durch, nur `/v1/chat/completions` gibt 401
+- Instance Admin Bootstrapping erfordert direkten DB-Insert — kein CLI/UI-Pfad im `authenticated` Deployment Mode
+- Agent Memory wird NICHT automatisch geschrieben — Agent muss explizit Memory-Tool aufrufen
+- Onboarding-Wizard Company Name Bug: Doppelpaste "ARES Bio.OSARES Bio.OS" (UI Issue)
+**Abhängigkeiten entdeckt:**
+- Hermes Cloud Worker → NousResearch Inference API (nicht OpenRouter!)
+- Paperclip Server → Worker via `HERMES_CLOUD_WORKER_URL` + `HERMES_CLOUD_SECRET`
+- `instance_user_roles` → `companies.create` Permission Gate
+**Entscheidungen:**
+- SG-014: NousResearch API direkt (nicht über OpenRouter) für Hermes-4-405B
+- SG-015: Supabase MCP Token in Antigravity IDE für direkte DB-Inspektion
+

@@ -94,10 +94,21 @@
 - [ ] Error Boundary + Global Error Handler implementieren.
 - [ ] Vitest + React Testing Library Setup für Dashboard.
 
+### 🚀 Cloud-Native Deployment (2026-04-02)
+- ✅ **Vercel** — UI deployed auf `autarch.app` (Domain bei AllInkl via CNAME)
+- ✅ **Cloud Run** — Paperclip Server (`paperclip-server`) + Hermes Worker (`hermes-cloud-worker`) in `ares-488111`
+- ✅ **Supabase** — Production DB `Autarch.OS` (`sdukmitswmvbcznhpskm`, eu-west-1)
+- ✅ **Admin Bootstrap** — User `mathias@ares-bio.com` als `instance_admin` promoted
+- ✅ **NousResearch API** — Hermes-4-405B via `inference-api.nousresearch.com/v1` (Key: `autarch_os`)
+- ✅ **Supabase MCP** — Live in Antigravity IDE (`sbp_1c5...`)
+- ✅ **E2E Onboarding** — Company → Agent → Issue → Run erfolgreich (3/3 Runs succeeded)
+
 ## ⚠️ Known Issues / Blocker
 - ~~**Honcho noch nicht deployed**~~ → ✅ Deployed: Docker Compose `localhost:8100` (v3.0.3)
-- ~~**Cloud Run Worker noch nicht deployed**~~ → ✅ Deployed: `hermes-cloud-950535292904.europe-west1.run.app`
+- ~~**Cloud Run Worker noch nicht deployed**~~ → ✅ Deployed: `hermes-cloud-worker-61066913791.europe-west1.run.app`
 - ~~**Hermes Response wrapped in tool_call**~~ → ✅ Fixed: `is not None` check (Hotfix, 97% Token-Reduction)
+- ~~**Paperclip Server nur lokal**~~ → ✅ Cloud Run: `paperclip-server-61066913791.europe-west1.run.app`
+- ~~**NousResearch API Key falsch**~~ → ✅ Fixed: Key `autarch_os` deployed
 - **Dashboard hat keine Unit-Tests** — für V1 akzeptabel, V2 muss Tests einführen.
-- **Hermes 70B hat KEIN Tool-Calling auf OpenRouter** — nur als Reasoning-Fallback nutzbar.
-- **Paperclip Server** — Läuft lokal (:3100), Heartbeat enabled, Agent JWT fehlt noch (`pnpm paperclipai onboard`).
+- **Agent Memory leer** — Agents schreiben noch kein Memory (Memory-Tool muss explizit aufgerufen werden).
+- **EETA Test-Companies** — 2 Test-Companies in DB, sollten bei Gelegenheit bereinigt werden.
