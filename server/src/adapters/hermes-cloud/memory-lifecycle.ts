@@ -101,18 +101,24 @@ export async function persistNewMemories(
   for (const line of ndjsonLines) {
     try {
       const event = JSON.parse(line);
-      // Hermes emits tool_call events for memory operations
+      // Hermes emits tool_call events for memory operations.
+      // The memory tool is named "memory" (NOT "save_memory").
+      // It uses: { action: "add"|"replace"|"remove", target: "memory"|"user", key, content }
       if (
         event.type === "tool_call" &&
-        event.name === "save_memory" &&
+        event.name === "memory" &&
         event.input
       ) {
-        newMemories.push({
-          key: event.input.key ?? `auto-${Date.now()}`,
-          content: event.input.content ?? event.input.memory ?? "",
-          category: event.input.category ?? "memory",
-          importance: event.input.importance ?? 50,
-        });
+        const action = event.input.action ?? "add";
+        // Only persist add/replace actions (skip "remove" — handled separately if needed)
+        if (action === "add" || action === "replace") {
+          newMemories.push({
+            key: event.input.key ?? `auto-${Date.now()}`,
+            content: event.input.content ?? event.input.memory ?? "",
+            category: event.input.target === "user" ? "user" : (event.input.category ?? "memory"),
+            importance: event.input.importance ?? 50,
+          });
+        }
       }
     } catch {
       // Skip non-JSON lines

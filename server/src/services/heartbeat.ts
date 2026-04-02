@@ -2800,11 +2800,23 @@ export function heartbeatService(db: Db) {
           try {
             const { ingestRunConversation } = await import("../adapters/hermes-cloud/honcho-client.js");
             const messages: Array<{ role: "user" | "assistant"; content: string }> = [];
+
+            // Extract the user message from context (the prompt that started this run)
+            const ctxMessages = Array.isArray((context as Record<string, unknown>)?.messages)
+              ? (context as Record<string, unknown>).messages as Array<{ role: string; content: string }>
+              : [];
+            for (const cm of ctxMessages) {
+              if (cm?.role === "user" && cm?.content) {
+                messages.push({ role: "user", content: cm.content });
+              }
+            }
+
+            // Extract assistant responses from the NDJSON stream
             for (const line of ndjsonLines) {
               try {
                 const evt = JSON.parse(line);
-                if (evt.type === "message" && evt.role && evt.content) {
-                  messages.push({ role: evt.role, content: evt.content });
+                if (evt.type === "response" && evt.content) {
+                  messages.push({ role: "assistant", content: evt.content });
                 }
               } catch { /* skip non-JSON */ }
             }

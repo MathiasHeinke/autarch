@@ -247,6 +247,53 @@ async def execute(
             output_tokens = result.get("completion_tokens", 0) or result.get("output_tokens", 0)
             total_cost_usd = result.get("estimated_cost_usd", 0.0) or 0.0
 
+            # ----------------------------------------------------------
+            # Emit tool_call events from the conversation messages.
+            # The server-side memory-lifecycle.ts watches for these to
+            # persist memories into agent_memory.  Without this, ALL
+            # tool invocations (memory, web, file, delegate_task) are
+            # invisible to the Paperclip control plane.
+            # ----------------------------------------------------------
+            agent_messages = result.get("messages", [])
+            if isinstance(agent_messages, list):
+                for msg in agent_messages:
+                    if not isinstance(msg, dict):
+                        continue
+                    role = msg.get("role", "")
+
+                    # OpenAI-style tool_calls inside an assistant message
+                    if role == "assistant":
+                        tool_calls = msg.get("tool_calls", [])
+                        if isinstance(tool_calls, list):
+                            for tc in tool_calls:
+                                if not isinstance(tc, dict):
+                                    continue
+                                fn = tc.get("function", {})
+                                fn_name = fn.get("name", "") if isinstance(fn, dict) else ""
+                                fn_args_raw = fn.get("arguments", "{}") if isinstance(fn, dict) else "{}"
+                                try:
+                                    fn_args = json.loads(fn_args_raw) if isinstance(fn_args_raw, str) else fn_args_raw
+                                except json.JSONDecodeError:
+                                    fn_args = {"raw": fn_args_raw}
+                                yield ndjson_line(ExecuteEvent(
+                                    type="tool_call",
+                                    name=fn_name,
+                                    input=fn_args,
+                                    toolUseId=tc.get("id", ""),
+                                ))
+
+                    # Anthropic-style content blocks with type=tool_use
+                    content_blocks = msg.get("content", [])
+                    if isinstance(content_blocks, list):
+                        for block in content_blocks:
+                            if isinstance(block, dict) and block.get("type") == "tool_use":
+                                yield ndjson_line(ExecuteEvent(
+                                    type="tool_call",
+                                    name=block.get("name", ""),
+                                    input=block.get("input", {}),
+                                    toolUseId=block.get("id", ""),
+                                ))
+
             if final_response:
                 yield ndjson_line(ExecuteEvent(
                     type="response",

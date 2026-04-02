@@ -5,14 +5,16 @@
  * cross-session memory and user/agent modeling.
  *
  * Architecture:
- *  - Self-hosted Honcho instance (Docker) for data sovereignty
+ *  - Self-hosted Honcho instance (Docker/Cloud Run) for data sovereignty
  *  - Workspace per company (multi-tenant isolation)
  *  - Peer per agent (agent identity modeling)
  *  - Session per heartbeat run (conversation thread)
  *
  * Environment:
- *  - HONCHO_API_URL:  self-hosted Honcho endpoint (default: http://localhost:8100)
+ *  - HONCHO_API_URL:  self-hosted Honcho endpoint
  *  - HONCHO_API_KEY:  API key for authentication
+ *
+ * API Version: Honcho v3 (validated against deployed OpenAPI spec)
  */
 
 import { logger } from "../../middleware/logger.js";
@@ -20,11 +22,12 @@ import { logger } from "../../middleware/logger.js";
 // --------------------------------------------------------------------------
 // Config
 // --------------------------------------------------------------------------
-const HONCHO_API_URL = process.env.HONCHO_API_URL ?? "http://localhost:8100";
+const HONCHO_API_URL = process.env.HONCHO_API_URL ?? "";
 const HONCHO_API_KEY = process.env.HONCHO_API_KEY ?? "";
+const HONCHO_TIMEOUT_MS = 5_000; // Non-blocking: 5s timeout
 
-function isHonchoEnabled(): boolean {
-  return HONCHO_API_KEY.length > 0;
+export function isHonchoEnabled(): boolean {
+  return HONCHO_API_URL.length > 0;
 }
 
 // --------------------------------------------------------------------------
@@ -45,24 +48,78 @@ export interface HonchoInsight {
 // --------------------------------------------------------------------------
 async function honchoFetch(
   path: string,
-  method: "GET" | "POST" | "PUT" = "GET",
+  method: "GET" | "POST" | "PUT" | "DELETE" = "GET",
   body?: unknown,
 ): Promise<unknown> {
-  const res = await fetch(`${HONCHO_API_URL}${path}`, {
-    method,
-    headers: {
-      "Content-Type": "application/json",
-      ...(HONCHO_API_KEY ? { Authorization: `Bearer ${HONCHO_API_KEY}` } : {}),
-    },
-    ...(body ? { body: JSON.stringify(body) } : {}),
-  });
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), HONCHO_TIMEOUT_MS);
 
-  if (!res.ok) {
-    const text = await res.text().catch(() => "unknown");
-    throw new Error(`Honcho API ${method} ${path} returned ${res.status}: ${text}`);
+  try {
+    const res = await fetch(`${HONCHO_API_URL}${path}`, {
+      method,
+      headers: {
+        "Content-Type": "application/json",
+        ...(HONCHO_API_KEY ? { Authorization: `Bearer ${HONCHO_API_KEY}` } : {}),
+      },
+      ...(body ? { body: JSON.stringify(body) } : {}),
+      signal: controller.signal,
+    });
+
+    if (!res.ok) {
+      const text = await res.text().catch(() => "unknown");
+      throw new Error(`Honcho API ${method} ${path} returned ${res.status}: ${text}`);
+    }
+
+    const contentType = res.headers.get("content-type") ?? "";
+    if (contentType.includes("application/json")) {
+      return res.json();
+    }
+    return res.text();
+  } finally {
+    clearTimeout(timer);
   }
+}
 
-  return res.json();
+/**
+ * Fire a request that may 409 Conflict (resource already exists) — that's OK.
+ */
+async function honchoFetchIdempotent(
+  path: string,
+  method: "POST" | "PUT" = "POST",
+  body?: unknown,
+): Promise<unknown> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), HONCHO_TIMEOUT_MS);
+
+  try {
+    const res = await fetch(`${HONCHO_API_URL}${path}`, {
+      method,
+      headers: {
+        "Content-Type": "application/json",
+        ...(HONCHO_API_KEY ? { Authorization: `Bearer ${HONCHO_API_KEY}` } : {}),
+      },
+      ...(body ? { body: JSON.stringify(body) } : {}),
+      signal: controller.signal,
+    });
+
+    // 409 = already exists — perfectly fine for idempotent creates
+    if (res.status === 409) {
+      return { alreadyExists: true };
+    }
+
+    if (!res.ok) {
+      const text = await res.text().catch(() => "unknown");
+      throw new Error(`Honcho API ${method} ${path} returned ${res.status}: ${text}`);
+    }
+
+    const contentType = res.headers.get("content-type") ?? "";
+    if (contentType.includes("application/json")) {
+      return res.json();
+    }
+    return res.text();
+  } finally {
+    clearTimeout(timer);
+  }
 }
 
 // --------------------------------------------------------------------------
@@ -72,8 +129,25 @@ function workspaceId(companyId: string): string {
   return `autarch-company-${companyId}`;
 }
 
-function peerName(agentId: string): string {
+function peerId(agentId: string): string {
   return `agent-${agentId}`;
+}
+
+// --------------------------------------------------------------------------
+// Ensure workspace + peer exist
+// --------------------------------------------------------------------------
+async function ensureWorkspaceAndPeer(
+  companyId: string,
+  agentId: string,
+): Promise<void> {
+  const wsId = workspaceId(companyId);
+  const pId = peerId(agentId);
+
+  // Create workspace (POST /v3/workspaces with id in body)
+  await honchoFetchIdempotent(`/v3/workspaces`, "POST", { id: wsId });
+
+  // Create peer (POST /v3/workspaces/{ws}/peers with id in body)
+  await honchoFetchIdempotent(`/v3/workspaces/${wsId}/peers`, "POST", { id: pId });
 }
 
 // --------------------------------------------------------------------------
@@ -94,19 +168,26 @@ export async function ingestRunConversation(
   if (!isHonchoEnabled() || messages.length === 0) return;
 
   try {
+    await ensureWorkspaceAndPeer(companyId, agentId);
+
     const wsId = workspaceId(companyId);
-
-    // Create or get workspace/peer (Honcho is idempotent)
-    await honchoFetch(`/v3/workspaces/${wsId}/peers/${peerName(agentId)}`, "PUT");
-
-    // Create session and add messages
+    const pId = peerId(agentId);
     const sessionId = `run-${runId}`;
+
+    // Create session (POST /v3/workspaces/{ws}/sessions with id in body)
+    await honchoFetchIdempotent(
+      `/v3/workspaces/${wsId}/sessions`,
+      "POST",
+      { id: sessionId, peers: [pId] },
+    );
+
+    // Add messages (POST /v3/workspaces/{ws}/sessions/{session}/messages)
     await honchoFetch(
       `/v3/workspaces/${wsId}/sessions/${sessionId}/messages`,
       "POST",
       {
         messages: messages.map((m) => ({
-          peer: m.role === "assistant" ? peerName(agentId) : "user",
+          peer: m.role === "assistant" ? pId : "user",
           content: m.content,
         })),
       },
@@ -126,7 +207,7 @@ export async function ingestRunConversation(
 
 /**
  * Query Honcho for synthesized insights about the agent's context.
- * Used to generate high-quality memory entries for the Externalized Brain.
+ * Used to generate high-quality context for the Externalized Brain.
  */
 export async function queryAgentInsights(
   companyId: string,
@@ -136,11 +217,14 @@ export async function queryAgentInsights(
   if (!isHonchoEnabled()) return null;
 
   try {
-    const wsId = workspaceId(companyId);
-    const peer = peerName(agentId);
+    await ensureWorkspaceAndPeer(companyId, agentId);
 
+    const wsId = workspaceId(companyId);
+    const pId = peerId(agentId);
+
+    // POST /v3/workspaces/{ws}/peers/{peer}/chat
     const result = await honchoFetch(
-      `/v3/workspaces/${wsId}/peers/${peer}/chat`,
+      `/v3/workspaces/${wsId}/peers/${pId}/chat`,
       "POST",
       { query },
     );
@@ -169,18 +253,18 @@ export async function queryAgentInsights(
 export async function getContext(
   companyId: string,
   agentId: string,
-  query: string,
+  _query: string,
 ): Promise<string | null> {
   if (!isHonchoEnabled()) return null;
 
   try {
     const wsId = workspaceId(companyId);
-    const peer = peerName(agentId);
+    const pId = peerId(agentId);
 
+    // GET /v3/workspaces/{ws}/peers/{peer}/context (no body)
     const result = await honchoFetch(
-      `/v3/workspaces/${wsId}/peers/${peer}/context`,
-      "POST",
-      { query },
+      `/v3/workspaces/${wsId}/peers/${pId}/context`,
+      "GET",
     );
 
     return typeof (result as Record<string, unknown>)?.content === "string"
