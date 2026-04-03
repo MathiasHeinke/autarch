@@ -49,14 +49,15 @@ async function main() {
 
     // Switch to Sign Up
     console.log("Switching to Sign Up mode...");
-    const signUpBtn = await page.$("text=Create one");
-    if (signUpBtn) {
-      await signUpBtn.click();
+    try {
       await page.waitForTimeout(1000);
-    } else {
-      console.log("Sign Up mode button not found, maybe already on sign up mode?");
+      const signUpBtn = page.locator('text="Create one"');
+      await signUpBtn.click({ timeout: 2000 });
+      console.log("Clicked Create one.");
+      await page.waitForTimeout(1000);
+    } catch(e) {
+      console.log("Sign Up mode button not found, maybe already on sign up mode?", e.message);
     }
-
     // Capture non-200 API responses to help debug
     page.on("response", async (response) => {
       const url = response.url();

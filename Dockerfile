@@ -34,14 +34,14 @@ RUN printf '{\n\
   "database": { "mode": "postgres", "backup": { "enabled": false } },\n\
   "logging": { "mode": "stdout" },\n\
   "server": {\n\
-    "deploymentMode": "local_trusted",\n\
+    "deploymentMode": "authenticated",\n\
     "exposure": "public",\n\
     "host": "0.0.0.0",\n\
     "port": 8080,\n\
     "allowedHostnames": [],\n\
     "serveUi": false\n\
   },\n\
-  "auth": { "baseUrlMode": "auto", "disableSignUp": false },\n\
+  "auth": { "baseUrlMode": "explicit", "publicBaseUrl": "https://autarch.app", "disableSignUp": false },\n\
   "storage": {\n\
     "provider": "local_disk",\n\
     "localDisk": { "baseDir": "/app/.paperclip/instances/default/data/storage" }\n\
