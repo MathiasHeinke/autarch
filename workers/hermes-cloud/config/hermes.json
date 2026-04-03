@@ -1,8 +1,9 @@
 {
   "model": {
-    "provider": "nousresearch",
-    "api_base": "https://inference-api.nousresearch.com/v1",
-    "model": "nousresearch/hermes-4-405b"
+    "provider": "google",
+    "api_base": "https://generativelanguage.googleapis.com/v1beta/openai/",
+    "pro_model": "gemini-3.1-pro-preview",
+    "flash_model": "gemini-3-flash-preview"
   },
   "reasoning": {
     "enabled": true,

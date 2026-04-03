@@ -1,5 +1,5 @@
 """
-Hermes Cloud Worker — FastAPI Application (Stateless Inference Engine v0.6.0)
+Hermes Cloud Worker — FastAPI Application (Stateless Inference Engine v0.7.0)
 
 100% stateless worker. No local persistence. No subprocess CLI.
 Uses hermes-agent Python library directly via `from run_agent import AIAgent`.
@@ -21,7 +21,8 @@ from fastapi import FastAPI, HTTPException, Depends, Header
 from fastapi.responses import StreamingResponse, JSONResponse
 
 from config import (
-    NOUSRESEARCH_API_KEY,
+    GOOGLE_API_KEY,
+    GEMINI_BASE_URL,
     DEFAULT_MODEL,
     MAX_ITERATIONS_HARD_CAP,
     COST_PER_RUN_HARD_CAP,
@@ -38,7 +39,7 @@ from models import ExecuteRequest, ExecuteEvent, HealthResponse
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
 logger = logging.getLogger("hermes-cloud-worker")
 
-app = FastAPI(title="Hermes Cloud Worker", version="0.6.0", docs_url=None, redoc_url=None)
+app = FastAPI(title="Hermes Cloud Worker", version="0.7.0", docs_url=None, redoc_url=None)
 
 # Lazy-loaded flag — checked once at startup
 _hermes_available: bool | None = None
@@ -104,10 +105,10 @@ async def health() -> JSONResponse:
             hermes_version = "installed"
 
     resp = HealthResponse(
-        status="healthy" if lib_ok and NOUSRESEARCH_API_KEY else "degraded",
+        status="healthy" if lib_ok and GOOGLE_API_KEY else "degraded",
         model=DEFAULT_MODEL,
         version=hermes_version or "unknown",
-        apiConnected=bool(NOUSRESEARCH_API_KEY),
+        apiConnected=bool(GOOGLE_API_KEY),
     )
     status_code = 200 if resp.status == "healthy" else 503
     return JSONResponse(content=resp.model_dump(), status_code=status_code)
@@ -121,8 +122,8 @@ async def execute(
     req: ExecuteRequest,
     _auth: None = Depends(verify_gateway_secret),
 ) -> StreamingResponse:
-    if not NOUSRESEARCH_API_KEY:
-        raise HTTPException(status_code=503, detail="NOUSRESEARCH_API_KEY not configured")
+    if not GOOGLE_API_KEY:
+        raise HTTPException(status_code=503, detail="GOOGLE_API_KEY not configured")
     
     if not _check_hermes_library():
         raise HTTPException(status_code=503, detail="hermes-agent library not installed")
@@ -207,7 +208,7 @@ async def execute(
     async def generate() -> AsyncGenerator[str, None]:
         start = time.time()
         
-        yield system_event(f"Hermes Cloud Worker v0.6.0 — model={req.model}, max_iterations={max_iters}")
+        yield system_event(f"Hermes Cloud Worker v0.7.0 — model={req.model}, max_iterations={max_iters}")
 
         input_tokens = 0
         output_tokens = 0
@@ -218,15 +219,12 @@ async def execute(
             from run_agent import AIAgent
 
             # Create AIAgent in library mode — stateless, no local memory
-            # Resolve model name — prepend nousresearch/ if no provider prefix
+            # Model is already a Gemini model ID — no prefix manipulation needed
             resolved_model = req.model or DEFAULT_MODEL
-            if "/" not in resolved_model:
-                resolved_model = f"nousresearch/{resolved_model}"
-
 
             agent = AIAgent(
-                api_key=NOUSRESEARCH_API_KEY,
-                base_url="https://inference-api.nousresearch.com/v1",
+                api_key=GOOGLE_API_KEY,
+                base_url=GEMINI_BASE_URL,
                 model=resolved_model,
                 max_iterations=max_iters,
                 quiet_mode=True,

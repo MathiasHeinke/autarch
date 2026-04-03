@@ -8,9 +8,10 @@ import type { HonchoMessage } from "./honcho-client.js";
  * Hermes Cloud Adapter — execute
  *
  * Sends a heartbeat execution request to the Hermes Cloud Run worker.
- * The worker runs Hermes v0.6.0 with Profiles for multi-tenant isolation.
+ * The worker runs Hermes v0.7.0 (Gemini backend) for multi-tenant agent execution.
  *
  * Response format: NDJSON stream parsed into stdout lines for Paperclip UI.
+ * Model routing: Gemini 3.1 Pro for complex tasks, Flash for simple ones.
  */
 
 // --- Config helpers ---
@@ -43,13 +44,13 @@ export async function execute(ctx: AdapterExecutionContext): Promise<AdapterExec
     throw new Error("hermes_cloud adapter: missing workerUrl or HERMES_CLOUD_WORKER_URL env");
   }
 
-  const model = asString(config.model, "nousresearch/hermes-4-405b");
+  const model = asString(config.model, "gemini-3.1-pro-preview");
   const maxIterations = Math.min(asNumber(config.maxIterations, 20), 50); // Hard cap: 50
   const costCapPerRun = asNumber(config.costCapPerRun, 5.0); // Default: $5.00
   const timeoutMs = asNumber(config.timeoutMs, 300_000); // Default: 5 min
   const enabledToolsets = sanitizeToolsets(config.enabledToolsets);
-  // NOTE: Deployed Cloud Run worker uses Hermes CLI with only 'default' profile.
-  // Until worker is redeployed with stateless library mode, we route all runs to 'default'.
+  // NOTE: Hermes Cloud worker v0.7.0 with Gemini backend.
+  // profileName maps to the Soul persona config from workers/agents/.
   const profileName = asString(config.profileName, "default");
   const configSystemPrompt = asString(config.systemPrompt, "");
 
@@ -98,11 +99,23 @@ export async function execute(ctx: AdapterExecutionContext): Promise<AdapterExec
     }
   }
 
+  // --- Dual-model routing: classify task complexity ---
+  // Pro: multi-step reasoning, code, debugging, architecture, research
+  // Flash: status updates, simple Q&A, formatting, short summaries
+  const lastUserMsg = scrubbedMessages.findLast((m: { role: string }) => m.role === "user")?.content ?? "";
+  const wordCount = lastUserMsg.split(/\s+/).length;
+  const hasCodeMarkers = /```|function |class |import |def |SELECT |CREATE /i.test(lastUserMsg);
+  const isMultiStep = /step|phase|plan|analyze|debug|review|refactor|research|implement/i.test(lastUserMsg);
+  const routingTier = (wordCount > 200 || hasCodeMarkers || isMultiStep) ? "pro" : "flash";
+  const routedModel = routingTier === "pro" ? "gemini-3.1-pro-preview" : "gemini-3-flash-preview";
+  // Explicit config.model takes precedence over auto-routing
+  const finalModel = config.model ? model : routedModel;
+
   const payload = {
     agentId: agent.id,
     runId,
     profileName,
-    model,
+    model: finalModel,
     systemPrompt,
     context: { ...context, messages: scrubbedMessages },
     enabledToolsets,
@@ -138,7 +151,7 @@ export async function execute(ctx: AdapterExecutionContext): Promise<AdapterExec
     const body = await res.text();
     const lines = body.split("\n").filter((l) => l.trim().length > 0);
 
-    let summary = `Hermes Cloud (${model})`;
+    let summary = `Hermes Cloud (${finalModel})`;
     let exitCode = 0;
 
     for (const line of lines) {
@@ -148,7 +161,7 @@ export async function execute(ctx: AdapterExecutionContext): Promise<AdapterExec
           exitCode = 1;
           summary = `Error: ${event.content ?? "unknown"}`;
         } else if (event.type === "response") {
-          summary = `Hermes Cloud (${model}) — ${event.content?.substring(0, 80) ?? "done"}`;
+          summary = `Hermes Cloud (${finalModel}) — ${event.content?.substring(0, 80) ?? "done"}`;
         } else if (event.type === "usage") {
           // Check cost cap
           const runCost = typeof event.totalCostUsd === "number" ? event.totalCostUsd : 0;

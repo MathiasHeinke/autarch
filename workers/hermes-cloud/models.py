@@ -20,7 +20,7 @@ class ExecuteRequest(BaseModel):
     agentId: str
     runId: str
     profileName: str = "default"
-    model: str = "hermes-4-405b"
+    model: str = "gemini-3.1-pro-preview"
     systemPrompt: str = ""
     context: dict = Field(default_factory=dict)
     enabledToolsets: list[str] = Field(default_factory=lambda: ["web", "file", "memory", "delegate_task"])

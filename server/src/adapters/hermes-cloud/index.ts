@@ -7,21 +7,24 @@ export const hermesCloudAdapter: ServerAdapterModule = {
   execute,
   testEnvironment,
   models: [
-    { id: "hermes-4-405b", label: "Hermes 4 405B" },
-    { id: "hermes-4-70b", label: "Hermes 4 70B" },
-    { id: "hermes-3-8b", label: "Hermes 3 8B" },
+    { id: "gemini-3.1-pro-preview", label: "Gemini 3.1 Pro (via Hermes)" },
+    { id: "gemini-3-flash-preview", label: "Gemini 3 Flash (via Hermes)" },
   ],
   supportsLocalAgentJwt: false,
   agentConfigurationDoc: `# hermes_cloud agent configuration
 
-Adapter: hermes_cloud
+Adapter: hermes_cloud (v0.7.0 — Gemini backend)
 
 Cloud-based Hermes agent execution via Cloud Run worker.
 No local installation required — agents run on managed infrastructure.
+Inference: Gemini 3.1 Pro (complex tasks) + Gemini 3 Flash (simple tasks) via hermes-agent library.
 
 Core fields:
 - workerUrl (string, optional): Cloud Run worker endpoint URL (falls back to HERMES_CLOUD_WORKER_URL env)
-- model (string, optional): Hermes model id (hermes-4-405b | hermes-4-70b | hermes-3-8b)
+- model (string, optional): Model id — set explicitly to override auto-routing:
+  - gemini-3.1-pro-preview: Complex reasoning, code, multi-step tasks
+  - gemini-3-flash-preview: Fast responses, simple Q&A, status updates
+  If omitted, the adapter auto-routes based on task complexity.
 - maxIterations (number, optional): max agent iterations per run (default: 20, hard cap: 50)
 - costCapPerRun (number, optional): maximum cost in USD per run (default: 5.00)
 - learnerBudget (number, optional): separate budget for post-run auto-learning extraction (default: 0.50)
@@ -30,6 +33,7 @@ Core fields:
   - file: file read/write operations
   - memory: cross-session memory persistence
   - delegate_task: task delegation to sub-agents
+  - hire_employee: autonomous creation of sub-agents with specific skills
   - todo: task list management
   - skills: autonomous skill acquisition (agentskills.io format)
   - vision: image analysis and understanding
