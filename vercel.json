@@ -8,6 +8,10 @@
     {
       "source": "/api/:path*",
       "destination": "https://paperclip-server-61066913791.europe-west1.run.app/api/:path*"
+    },
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
     }
   ],
   "headers": [
