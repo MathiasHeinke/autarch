@@ -82,6 +82,13 @@
   - ✅ **Retest:** ARE-8, Run 79299908 → "Company is ARES, product is Bio.OS" korrekt gespeichert
 - ⚠️ **Phase 4:** Known Issues — WebSocket failures, heartbeat 404s, doppelter Company Name (non-critical)
 
+### 🧹 Production DB Cleanup (2026-04-03, 19:35-20:10)
+- ✅ **Failed Runs gelöscht:** 7 failed heartbeat_runs entfernt (32 succeeded beibehalten)
+- ✅ **EETA Test-Companies gelöscht:** Full FK-Kaskade für `65bec1c0` + `b541713c` (48 Tabellen)
+- ✅ **Company Name Fix:** "ARES Bio.OSARES Bio.OS" → "ARES Bio.OS"
+- ✅ **WebSocket Reconnect Cap:** Max 5 Retries statt endlos (Console-Spam gestoppt)
+- ✅ **Vercel Redeploy:** `autarch.app` mit WS-Cap deployed
+
 ## 🔄 In Arbeit (In Progress)
 - Heartbeat Cron (5min Intervall) im Orchestrator aktivieren
 
@@ -96,6 +103,7 @@
 - [x] Worker Agents (23 Persona-Dirs) auf Library Mode migrieren. ✅ (2026-04-02 — soul-loader.ts, profileName → SOUL.md + AGENTS.md + HEARTBEAT.md in System-Prompt)
 - [ ] Custom Autarch-MCP-Server implementieren (Supabase-Zugriff).
 - [ ] Heartbeat-Cron im Orchestrator aktivieren (5-Min-Intervall).
+- [ ] WebSocket richtig lösen (Custom Domain auf Cloud Run ODER SSE Fallback).
 
 ### P2 — Dashboard Fixes (aus Audit)
 - [ ] C-001: Issue Status-Mutation verdrahten (statt console.log).
@@ -124,6 +132,8 @@
 - ~~**Hermes Response wrapped in tool_call**~~ → ✅ Fixed: `is not None` check (Hotfix, 97% Token-Reduction)
 - ~~**Paperclip Server nur lokal**~~ → ✅ Cloud Run: `paperclip-server-61066913791.europe-west1.run.app`
 - ~~**NousResearch API Key falsch**~~ → ✅ Fixed: Key `autarch_os` deployed
+- ~~**EETA Test-Companies**~~ → ✅ Gelöscht: Full FK-Kaskade (48 Tabellen)
+- ~~**Agent Memory leer**~~ → ✅ Fixed: JSON-String Parsing in memory-lifecycle.ts
+- **WebSocket via Vercel** — Vercel proxy unterstützt kein WS-Upgrade. Reconnect auf 5 Retries gecappt. UI funktioniert via HTTP Polling. Langfristig: Custom Domain auf Cloud Run oder SSE Fallback.
 - **Dashboard hat keine Unit-Tests** — für V1 akzeptabel, V2 muss Tests einführen.
-- **Agent Memory leer** — Agents schreiben noch kein Memory (Memory-Tool muss explizit aufgerufen werden).
-- **EETA Test-Companies** — 2 Test-Companies in DB, sollten bei Gelegenheit bereinigt werden.
+
