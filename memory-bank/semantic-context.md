@@ -518,3 +518,14 @@ git merge upstream/main  # Konflikte NUR in workers/hermes-cloud/ + memory-bank/
 - Cloud Run Deploy via gcloud run deploy --source=. baut remote
 **Abhängigkeiten:** agent_memory.ts → memory-lifecycle.ts → execute.ts; honcho-client.ts → execute.ts (optional)
 **Entscheidungen:** Hybrid A+C (built-in + MCP), Learner Budget $0.50, terminal PERMANENT BLOCKED, Cohere Transcribe pre-baked
+
+### 2026-04-03 — Ship: feat(hermes): Gemini Migration v0.7.0 — NousResearch → Gemini Backend
+**Geänderte Module:** config.py, main.py, models.py, hermes.json, execute.ts, index.ts
+**Erkenntnisse:**
+- hermes-agent Library ist provider-agnostisch via OpenAI-Compat-Endpoint — 3-Parameter-Swap genügt
+- Gemini OpenAI-compat Base-URL: `https://generativelanguage.googleapis.com/v1beta/openai/`
+- GCP Secrets: neues `google-api-key` Secret, IAM Binding auf Compute SA erforderlich
+- Cloud Run: --source Deploy baut remote Dockerfile, ~7min Buildzeit
+- Dual-Model-Routing im Adapter: wordCount > 200 || codeMarkers || multiStep → Pro, sonst Flash
+**Abhängigkeiten:** config.py → main.py (AIAgent constructor); execute.ts → index.ts (model list); GCP Secret `google-api-key` → Cloud Run env
+**Entscheidungen:** SG-005: Gemini via OpenAI-Compat als einziges Inference-Backend. NousResearch als Legacy-Fallback in config.py behalten. Eigener Gateway (hermes-cloud-worker ≠ ares-hermes-agent). Min-instances=0 akzeptabel.

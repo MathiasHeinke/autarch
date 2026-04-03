@@ -1,30 +1,32 @@
-# Active Context — Session 2026-04-03 #2 (Deep E2E Post-Ship)
+# Active Context — Session 2026-04-03 #3 (Gemini Migration v0.7.0)
 
 ## Aktueller Fokus
-Deep E2E Testing → Phase 3 Bug gefunden und gefixt. Deploy läuft.
+Hermes Cloud Worker von NousResearch auf Gemini migriert. Deployed und healthy.
 
 ## Session Summary
-1. **Phase 1 ✅** — Infrastructure Smoke (4/4 passed): Worker healthy, UI loads, auto-login, company visible
-2. **Phase 2 ✅** — Agent Run Pipeline (4/4 passed): Issue ARE-6 erstellt, Hermes-E2E zugewiesen, Run 199cbd0d succeeded, Response: "Hello from Hermes! E2E test successful."
-3. **Phase 3 ⚠️** — Memory Persistence: Issue ARE-7 erstellt, Agent speicherte via `memory` tool, Run 33f7c933 succeeded, **aber BUG**: `arguments` JSON-String wurde nicht geparst → leeres `content` in DB
-4. **Bugfix committed**: `memory-lifecycle.ts` — `typeof rawArgs === "string" ? JSON.parse(rawArgs) : rawArgs`
-5. **Deploying** — Paperclip Server auf Cloud Run (ares-488111/europe-west1)
+1. **Analyse ✅** — Gemma 4 vs Gemini Strategy Report erstellt. Entscheidung: Gemini 3.1 Pro + Flash (kein Gemma)
+2. **Implementation Plan ✅** — 4-Phasen-Plan (Worker Config, Adapter, Verification, Deploy) genehmigt
+3. **Phase 1 ✅** — Python Worker: config.py, main.py, models.py, hermes.json auf Gemini umgeschrieben
+4. **Phase 2 ✅** — TypeScript Adapter: execute.ts (Dual-Model Routing + Task Classifier), index.ts (Model-Liste)
+5. **Phase 3 ✅** — tsc Exit 0, Python AST parse aller 3 Files OK
+6. **Phase 4 ✅** — GCP Secret `google-api-key` angelegt, IAM Binding gesetzt, Cloud Run Deploy Revision 00024-6jb
+7. **Health Check ✅** — `{status: healthy, model: gemini-3.1-pro-preview, version: 0.7.0, apiConnected: true}`
+8. **Ship ✅** — Git commit `f5f8cdca`, pushed to master
 
 ## Kritische Kennzahlen
-- **Production Worker:** hermes-cloud-worker v0.6.0 (NousResearch Hermes-4-405B)
+- **Production Worker:** hermes-cloud-worker v0.7.0 (Gemini 3.1 Pro Preview)
+- **Inference Backend:** `https://generativelanguage.googleapis.com/v1beta/openai/`
+- **Flash Model:** gemini-3-flash-preview (auto-routed für simple tasks)
 - **Server:** paperclip-server (Cloud Run, ares-488111)
 - **DB:** Supabase `sdukmitswmvbcznhpskm` (Autarch.OS)
-- **GCP Project:** `ares-488111` (nicht autarch-prod!)
+- **GCP Project:** `ares-488111`
 - **GCP Account:** `marketing@mathiasheinke.de`
 
 ## Known Issues
-- WebSocket `wss://autarch.app/api/.../events/ws` — Verbindung schlägt fehl
-- heartbeat-runs 404 Errors bei alten Runs
-- Company Name doppelt: "ARES Bio.OSARES Bio.OS"
-- "No transcript captured" auf älteren Runs (vor Fix)
+- WebSocket via Vercel — Reconnect auf 5 Retries gecappt
+- Preview-Model-IDs können sich ändern (gemini-3.1-pro-preview, gemini-3-flash-preview)
 
-## Nächste Schritte (nach Deploy)
-1. Retest Memory-Persistence (Issue ARE-8 mit Memory-Task)
-2. Phase 4: Console Error Monitoring
-3. Memory Bank finale Aktualisierung
-4. Walkthrough erstellen
+## Nächste Schritte
+1. E2E Smoke Test — echten Agent-Run über Paperclip UI triggern
+2. Streaming-Verhalten bei Tool-Calls (save_memory etc.) beobachten
+3. budget_tokens: 16384 für Pro validieren

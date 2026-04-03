@@ -1,6 +1,6 @@
 # Progress: Paperclip (Autarch)
 
-> Letztes Update: 2026-04-01 (Post-Refactoring)
+> Letztes Update: 2026-04-03 (Post-Gemini-Migration v0.7.0)
 
 ## ✅ Abgeschlossen (Completed)
 
@@ -91,8 +91,16 @@
 
 - ✅ **Heartbeat Cron aktiviert:** 5min Intervall (300s), erster Auto-Run `b4458d7a` um 18:22 succeeded
 
+### 🚀 Gemini Migration v0.7.0 (2026-04-03)
+- ✅ **Inference-Backend:** NousResearch Hermes-4-405B → Google Gemini 3.1 Pro Preview
+- ✅ **3-Parameter-Swap:** `base_url`, `api_key`, `model` — hermes-agent Library 100% erhalten
+- ✅ **Dual-Model Routing:** Adapter klassifiziert Tasks → Pro (komplex) oder Flash (simpel)
+- ✅ **GCP Secret:** `google-api-key` angelegt + IAM Binding
+- ✅ **Cloud Run:** Revision 00024-6jb deployed, Health: `{status: healthy, version: 0.7.0}`
+- ✅ **Git:** Commit `f5f8cdca`, pushed to master
+
 ## 🔄 In Arbeit (In Progress)
-- Keine aktiven Tasks
+- E2E Smoke Test mit Gemini-Backend (echten Agent-Run über Paperclip UI triggern)
 
 ## 📋 Offen (To-Do)
 
@@ -124,7 +132,7 @@
 - ✅ **Cloud Run** — Paperclip Server (`paperclip-server`) + Hermes Worker (`hermes-cloud-worker`) in `ares-488111`
 - ✅ **Supabase** — Production DB `Autarch.OS` (`sdukmitswmvbcznhpskm`, eu-west-1)
 - ✅ **Admin Bootstrap** — User `mathias@ares-bio.com` als `instance_admin` promoted
-- ✅ **NousResearch API** — Hermes-4-405B via `inference-api.nousresearch.com/v1` (Key: `autarch_os`)
+- ✅ **NousResearch API** — ~~Hermes-4-405B~~ → Replaced by Gemini 3.1 Pro Preview (v0.7.0, 2026-04-03)
 - ✅ **Supabase MCP** — Live in Antigravity IDE (`sbp_1c5...`)
 - ✅ **E2E Onboarding** — Company → Agent → Issue → Run erfolgreich (3/3 Runs succeeded)
 

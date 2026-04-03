@@ -50,6 +50,12 @@
 
 > *IMMER einen Eintrag schreiben — auch bei kleinen Fixes.*
 
+### Session 2026-04-03 — feat(hermes): Gemini Migration v0.7.0 — NousResearch → Gemini Backend
+- **Thema:** Hermes Cloud Worker Inference-Backend von NousResearch (hermes-4-405b) auf Google Gemini (gemini-3.1-pro-preview) migriert. `hermes-agent` Library vollständig erhalten — reiner 3-Parameter-Swap (base_url, api_key, model).
+- **Ergebnis:** config.py (GOOGLE_API_KEY + GEMINI_BASE_URL), main.py (AIAgent constructor swap, v0.7.0), models.py (default model), hermes.json (provider: google), execute.ts (dual-model routing + task classifier), index.ts (model list). tsc Exit 0. Cloud Run Revision 00024-6jb deployed. Health: `{status: healthy, model: gemini-3.1-pro-preview, version: 0.7.0}`. Git: `f5f8cdca`.
+- **Architektur-Entscheidung:** SG-005: Gemini via OpenAI-Compat-Endpoint als Hermes-Inference-Backend (2026-04-03). hermes-agent Library bleibt als Agentic-Framework — nur Backend-Swap. Dual-Model-Routing (Pro: komplex, Flash: simpel) im Adapter.
+- **Offene Punkte:** E2E Smoke Test mit echtem Agent-Run über Paperclip UI. Streaming-Verhalten bei Tool-Calls beobachten. Preview-Model-IDs tracken (können sich ändern).
+
 ### Session 2026-04-02 — /hotfix: Context-Loss Bug — Hermes Agent bekommt Task-Kontext (KRITISCH)
 - **Thema:** Hermes-4-405B Worker erhielt nie den Issue-Body oder Kommentare. Deep E2E Test (ARE-2) hat den Bug zweifelsfrei isoliert.
 - **Ergebnis:** `heartbeat.ts`: `description` zu issueContext-Query hinzugefügt + Context-Hydration-Pipeline (Issue-Body + 20 Comments → context.messages). Import `issueComments` aus `@paperclipai/db`. `module-interaction-map.md` Step 0 dokumentiert. tsc clean. SG-016 in semantic-context.
