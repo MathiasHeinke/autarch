@@ -8,7 +8,7 @@ import os
 NOUSRESEARCH_API_KEY = os.environ.get("NOUSRESEARCH_API_KEY", "")
 
 # Gateway security — shared secret between Paperclip adapter and worker
-HERMES_CLOUD_SECRET = os.environ.get("HERMES_CLOUD_SECRET", "")
+HERMES_CLOUD_SECRET = os.environ.get("HERMES_CLOUD_SECRET", "").strip()
 
 # Model defaults
 DEFAULT_MODEL = os.environ.get("DEFAULT_MODEL", "nousresearch/hermes-4-405b")

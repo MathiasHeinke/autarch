@@ -3541,7 +3541,10 @@ function LogViewer({ run, adapterType }: { run: HeartbeatRun; adapterType: strin
           setLogOffset((prev) => prev + result.content.length);
         }
       } catch (err) {
-        if (isRunLogUnavailable(err)) return;
+        if (isRunLogUnavailable(err)) {
+          clearInterval(interval);
+          return;
+        }
         // ignore polling errors
       }
     }, 2000);

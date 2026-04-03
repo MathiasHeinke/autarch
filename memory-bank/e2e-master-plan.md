@@ -1,62 +1,32 @@
-# 🐝 Autarch — End-to-End Master Test Plan
-Generiert: 2026-04-02 18:02 CEST | Scope: **Memory Pipeline + Honcho Integration**
+# 🐝 Hermes Autonomous Expansion — End-to-End Master Test Plan
+Generiert: 2026-04-03 | Scope: Full System (5-Phase Features Integration) | Environment: autarch.app
 
-> **Fokus:** Validierung der 4 Fixes aus Commit `978b6791`:
-> 1. Worker tool_call Event-Emission
-> 2. memory-lifecycle Tool-Name Fix (save_memory → memory)
-> 3. Honcho v3 Client Rewrite
-> 4. Heartbeat Conversation Ingestion
-
-## Baseline
-| Metrik | Wert |
-|--------|------|
-| agent_memory Einträge | **0** |
-| Honcho Workspaces | 1 (ares-intelligence) |
-| Test-User | mathias@ares-bio.com (instance_admin) |
-| Test-Company | ARES Bio.OS (b4eb2c07...) |
-| Test-Agent | Hermes-E2E (23b6704e..., adapter: hermes_cloud, profileName: null) |
-| Existierende Issues | ARE-1 (in_progress), ARE-2 (in_progress) |
-
----
-
-## 🏁 Phase 1: Infrastructure Health (Pre-Flight)
+## 🏁 Phase 1: Authentication & Basic Agent Connectivity
 | ID  | Funktion | Beschreibung | Test-Status | Gefundene Bugs / Fixes |
 |-----|----------|--------------|-------------|------------------------|
-| 1.1 | Server Health | GET /api/health → status:ok, authReady:true | ⏳ Pending | - |
-| 1.2 | Worker Health | GET /v1/health → status:healthy, apiConnected:true | ⏳ Pending | - |
-| 1.3 | Honcho Health | POST /v3/workspaces/list → 200 + items | ⏳ Pending | - |
-| 1.4 | Supabase Connectivity | SELECT 1 FROM agent_memory → 0 rows | ⏳ Pending | - |
-| 1.5 | Auth Login | POST /api/auth/sign-in → session cookie | ⏳ Pending | - |
+| 1.1 | Login & Session | Login auf `autarch.app` via E-Mail/UI. Prüfung der Auth-Cookies. | ⏳ Pending | - |
+| 1.2 | Cloud Run Health | Hermes Worker muss erreichbar sein. | ⏳ Pending | - |
 
-## 💬 Phase 2: Agent Task Execution & Memory Write
+## 🧠 Phase 2: Agent Toolset & Learner Budget
 | ID  | Funktion | Beschreibung | Test-Status | Gefundene Bugs / Fixes |
 |-----|----------|--------------|-------------|------------------------|
-| 2.1 | Reset Issues | Set ARE-1/ARE-2 to `done`, create fresh ARE-3 | ⏳ Pending | - |
-| 2.2 | Issue Assignment | ARE-3 assigned to Hermes-E2E agent | ⏳ Pending | - |
-| 2.3 | Trigger Heartbeat | POST /api/companies/{id}/heartbeat → 200 | ⏳ Pending | - |
-| 2.4 | Worker Execution | Check Cloud Run logs: Worker received request, ran tools | ⏳ Pending | - |
-| 2.5 | Tool-Call Events | Verify NDJSON stream contains tool_call events | ⏳ Pending | - |
-| 2.6 | Memory Persistence | SELECT FROM agent_memory → rows > 0 | ⏳ Pending | - |
-| 2.7 | Issue Completion | ARE-3 status changed to done/failed | ⏳ Pending | - |
+| 2.1 | Toolset Injection | Task zuweisen und prüfen, ob die 9 Tools (inkl. MCP & Vision) bereitstehen. | ⏳ Pending | - |
+| 2.2 | Learner Budget | Task starten, der externe API nutzt. Learner Budget ($0.50) Abzug verifizieren. | ⏳ Pending | - |
 
-## 🧠 Phase 3: Honcho Integration
+## 💾 Phase 3: Atomic Memory Upsert
 | ID  | Funktion | Beschreibung | Test-Status | Gefundene Bugs / Fixes |
 |-----|----------|--------------|-------------|------------------------|
-| 3.1 | Honcho Workspace | Verify workspace created for ARES company | ⏳ Pending | - |
-| 3.2 | Honcho Peer | Verify peer created for Hermes-E2E agent | ⏳ Pending | - |
-| 3.3 | Honcho Session | Verify session created with run ID | ⏳ Pending | - |
-| 3.4 | Honcho Messages | Verify conversation messages ingested | ⏳ Pending | - |
+| 3.1 | Learn Context | Agent soll etwas über den User lernen und speichern (Category: user_preference). | ⏳ Pending | - |
+| 3.2 | Atomic Update | Gleiche Info mutieren → prüfen via `onConflictDoUpdate` und DB Console. | ⏳ Pending | - |
 
-## 🌐 Phase 4: UI Dashboard Verification
+## 🌐 Phase 4: MCP + Web Intelligence
 | ID  | Funktion | Beschreibung | Test-Status | Gefundene Bugs / Fixes |
 |-----|----------|--------------|-------------|------------------------|
-| 4.1 | Login Flow | autarch.app → login → dashboard | ⏳ Pending | - |
-| 4.2 | Company View | ARES Bio.OS company visible | ⏳ Pending | - |
-| 4.3 | Agent Detail | Hermes-E2E agent shows runs | ⏳ Pending | - |
-| 4.4 | Issue Detail | ARE-3 shows execution transcript | ⏳ Pending | - |
-| 4.5 | Run Transcript | Agent response visible in run detail | ⏳ Pending | - |
+| 4.1 | Apify Scraper | Agent anweisen: "Kratze Infos von example.com". Prüfung via puppeteer/Console Logs. | ⏳ Pending | - |
+| 4.2 | Transcription | Audio File verarbeiten (via Cohere Transcribe Endpoint) & Ausgabe prüfen. | ⏳ Pending | - |
 
----
-
-## Legende
-- ⏳ Pending | 🏃‍♂️ In Progress | ❌ Failed | 🛠️ Bugfixed | ✅ Passed
+## 🤖 Phase 5: Honcho Reasoning (Cross-Session)
+| ID  | Funktion | Beschreibung | Test-Status | Gefundene Bugs / Fixes |
+|-----|----------|--------------|-------------|------------------------|
+| 5.1 | Post-Run Ingestion | Run abschließen. Prüfen, ob Konversation an Honcho gesendet wurde. | ⏳ Pending | - |
+| 5.2 | Pre-Run Insight | Neuen Task öffnen. Prüfen ob Honcho Insight als System Prompt Inject zurückkommt. | ⏳ Pending | - |

@@ -223,9 +223,6 @@ async def execute(
             if "/" not in resolved_model:
                 resolved_model = f"nousresearch/{resolved_model}"
 
-            # Check for MCP config
-            import pathlib
-            mcp_config = MCP_CONFIG_PATH if pathlib.Path(MCP_CONFIG_PATH).exists() else None
 
             agent = AIAgent(
                 api_key=NOUSRESEARCH_API_KEY,
@@ -240,8 +237,6 @@ async def execute(
                 disabled_toolsets=list(BLOCKED_TOOLSETS),
                 ephemeral_system_prompt=system_prompt,
                 session_id=req.runId or str(uuid.uuid4()),
-                mcp_config_path=mcp_config,
-                skills_dir="/app/skills",
             )
 
             yield system_event("AIAgent initialized — starting inference")
