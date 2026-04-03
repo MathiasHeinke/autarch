@@ -89,8 +89,10 @@
 - ✅ **WebSocket Reconnect Cap:** Max 5 Retries statt endlos (Console-Spam gestoppt)
 - ✅ **Vercel Redeploy:** `autarch.app` mit WS-Cap deployed
 
+- ✅ **Heartbeat Cron aktiviert:** 5min Intervall (300s), erster Auto-Run `b4458d7a` um 18:22 succeeded
+
 ## 🔄 In Arbeit (In Progress)
-- Heartbeat Cron (5min Intervall) im Orchestrator aktivieren
+- Keine aktiven Tasks
 
 ## 📋 Offen (To-Do)
 
@@ -102,7 +104,7 @@
 ### P1 — Integration Completion
 - [x] Worker Agents (23 Persona-Dirs) auf Library Mode migrieren. ✅ (2026-04-02 — soul-loader.ts, profileName → SOUL.md + AGENTS.md + HEARTBEAT.md in System-Prompt)
 - [ ] Custom Autarch-MCP-Server implementieren (Supabase-Zugriff).
-- [ ] Heartbeat-Cron im Orchestrator aktivieren (5-Min-Intervall).
+- [x] Heartbeat-Cron im Orchestrator aktivieren (5-Min-Intervall). ✅ (2026-04-03, intervalSec=300)
 - [ ] WebSocket richtig lösen (Custom Domain auf Cloud Run ODER SSE Fallback).
 
 ### P2 — Dashboard Fixes (aus Audit)
