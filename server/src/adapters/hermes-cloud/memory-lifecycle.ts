@@ -17,7 +17,7 @@
  */
 import { eq, and, desc, inArray } from "drizzle-orm";
 import type { Db } from "@paperclipai/db";
-import { agentMemory } from "@paperclipai/db";
+import { agentMemory, issues, agents, agentWakeupRequests, heartbeatRuns } from "@paperclipai/db";
 
 // --------------------------------------------------------------------------
 // Types
@@ -108,6 +108,17 @@ export async function persistNewMemories(
     importance: number;
   }> = [];
 
+  const newIssues: Array<{
+    assigneeAgentName: string;
+    description: string;
+  }> = [];
+
+  const newAgents: Array<{
+    name: string;
+    role: string;
+    instructions: string;
+  }> = [];
+
   // ---- Helper: extract memory from a parsed tool-call input ----
   function extractMemoryFromInput(
     input: Record<string, unknown>,
@@ -162,6 +173,23 @@ export async function persistNewMemories(
             importance: event.input.importance ?? 70,
           });
         }
+
+        // Delegate task
+        if (toolName === "delegate_task") {
+          newIssues.push({
+            assigneeAgentName: event.input.agent ?? event.input.assignee ?? event.input.agent_name ?? "",
+            description: event.input.task ?? event.input.description ?? JSON.stringify(event.input),
+          });
+        }
+
+        // Hire employee
+        if (toolName === "hire_employee" || toolName === "create_agent") {
+          newAgents.push({
+            name: event.input.name ?? "New Employee",
+            role: event.input.role ?? "employee",
+            instructions: event.input.instructions ?? event.input.description ?? "",
+          });
+        }
       }
 
       // Path 2: Hermes-4-405B embeds tool_calls as <tool_call>{JSON}</tool_call>
@@ -181,6 +209,19 @@ export async function persistNewMemories(
             if (SKILL_TOOL_NAMES.has(parsedName)) {
               extractMemoryFromInput({ name: parsedName, ...args }, "skill");
             }
+            if (parsedName === "delegate_task") {
+              newIssues.push({
+                assigneeAgentName: args.agent ?? args.assignee ?? args.agent_name ?? "",
+                description: args.task ?? args.description ?? JSON.stringify(args),
+              });
+            }
+            if (parsedName === "hire_employee" || parsedName === "create_agent") {
+              newAgents.push({
+                name: args.name ?? "New Employee",
+                role: args.role ?? "employee",
+                instructions: args.instructions ?? args.description ?? "",
+              });
+            }
           } catch {
             // Malformed JSON inside <tool_call> — skip
           }
@@ -191,11 +232,12 @@ export async function persistNewMemories(
     }
   }
 
-  if (newMemories.length === 0) return 0;
+  if (newMemories.length === 0 && newIssues.length === 0) return 0;
+
+  let persisted = 0;
 
   // Upsert by key — newer memories overwrite older ones
   // Uses the unique index on (company_id, agent_id, key) for atomic upsert
-  let persisted = 0;
   for (const mem of newMemories) {
     await db
       .insert(agentMemory)
@@ -219,6 +261,88 @@ export async function persistNewMemories(
         },
       });
     persisted++;
+  }
+
+  // Create hired employees
+  for (const agentReq of newAgents) {
+    if (!agentReq.name) continue;
+    const [newAgent] = await db.insert(agents).values({
+      companyId,
+      name: agentReq.name,
+      role: agentReq.role,
+      adapterType: "hermes_cloud",
+      status: "idle",
+    }).returning({ id: agents.id });
+    
+    if (agentReq.instructions) {
+      await db.insert(agentMemory).values({
+        companyId,
+        agentId: newAgent.id,
+        key: "core_instructions",
+        content: agentReq.instructions,
+        category: "memory",
+        importance: 100,
+        sourceRunId: runId,
+      });
+    }
+    persisted++;
+  }
+
+  // Create delegated tasks as user-level issues assigned to the target agent
+  for (const issueReq of newIssues) {
+    if (!issueReq.assigneeAgentName || !issueReq.description) continue;
+    
+    // Resolve assignee agent
+    const targetAgentRows = await db.select({ id: agents.id })
+      .from(agents)
+      .where(and(eq(agents.companyId, companyId), eq(agents.name, issueReq.assigneeAgentName)))
+      .limit(1);
+      
+    if (targetAgentRows.length > 0) {
+      const assigneeAgentId = targetAgentRows[0].id;
+      const [newIssue] = await db.insert(issues).values({
+        companyId,
+        title: `Delegated Task (from run ${runId.slice(0, 8)})`,
+        description: issueReq.description,
+        status: "todo",
+        priority: "high",
+        assigneeAgentId,
+        createdByAgentId: agentId,
+      }).returning({ id: issues.id });
+      
+      const [wakeup] = await db.insert(agentWakeupRequests).values({
+        companyId,
+        agentId: assigneeAgentId,
+        source: "assignment",
+        triggerDetail: "system",
+        reason: `Delegated by agent ${agentId.slice(0, 8)}`,
+        payload: { issueId: newIssue.id },
+        requestedByActorType: "agent",
+        requestedByActorId: agentId,
+        status: "queued"
+      }).returning({ id: agentWakeupRequests.id });
+      
+      const enrichedContextSnapshot = {
+        issueId: newIssue.id,
+        source: "assignment"
+      };
+
+      const [newRun] = await db.insert(heartbeatRuns).values({
+        companyId,
+        agentId: assigneeAgentId,
+        invocationSource: "assignment",
+        triggerDetail: "system",
+        status: "queued",
+        wakeupRequestId: wakeup.id,
+        contextSnapshot: enrichedContextSnapshot,
+      }).returning({ id: heartbeatRuns.id });
+
+      await db.update(agentWakeupRequests)
+        .set({ runId: newRun.id, updatedAt: new Date() })
+        .where(eq(agentWakeupRequests.id, wakeup.id));
+        
+      persisted++;
+    }
   }
 
   return persisted;
