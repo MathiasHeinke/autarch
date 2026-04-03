@@ -1,24 +1,28 @@
 # Active Context: Paperclip (Autarch)
 
-> Letztes Update: 2026-04-02 (Post Soul-Loader Ship)
+> Letztes Update: 2026-04-03 (Post Hermes Worker Fix + E2E Inference Verified)
 
 ## Aktueller Fokus
-**Session 2026-04-02:** semantic-context.md v2.0 (Founder Vision "Go Native" verankert) + Soul-Loader shipped — G-008 geschlossen.
+**Session 2026-04-03:** Hermes Cloud Worker vollständig live — Auth-Fix (secret whitespace), AIAgent kwargs cleanup, NousResearch API Key deployed, E2E Inference verified ("Hello!" in 4135ms).
+
+### ✅ Hermes Worker Production Fix (2026-04-03)
+- `config.py`: `.strip()` auf HERMES_CLOUD_SECRET — Whitespace aus Secret Manager bereinigt
+- `main.py`: Unsupported kwargs `mcp_config_path` + `skills_dir` aus AIAgent init entfernt
+- GCP Secret Manager: `nousresearch-api-key` angelegt + IAM Policy + Cloud Run mount
+- E2E Smoke Test: Health=healthy, apiConnected=true, Inference 4135ms ✅
+
+### ✅ Hermes Autonomous Expansion (5 Phasen — 2026-04-03)
+- Phase 1: ALLOWED_TOOLSETS → 9 (todo, skills, vision, session_search, honcho)
+- Phase 2: agent_memory unique index + atomic upsert
+- Phase 3: MCP/Apify Integration (Dockerfile + config)
+- Phase 4: Cohere Transcribe Pipeline (Dockerfile)
+- Phase 5: Honcho POST /v1/apps/.../sessions/.../chat wiring
 
 ### ✅ Deep Research v4.1 + Deployment Sync (COMPLETE)
 - Ground of Truth Atlas v4.1, Cloud Run LIVE, Honcho LIVE, E2E 16/16 PASSED
 
 ### ✅ Hermes Stateless Engine Refactoring (6 Phasen — COMPLETE)
 - Gateway Security, Library Refactor, HERMES_ONLY_MODE, Externalized Brain, Memory Lifecycle, Honcho
-
-### ✅ Soul-Loader — G-008 geschlossen (2026-04-02)
-- `soul-loader.ts`: Lädt SOUL.md + AGENTS.md + HEARTBEAT.md für profileName
-- `heartbeat.ts`: Soul pre-load nach Honcho-Block → `context.hermesAgentSoul`
-- `execute.ts`: `buildSoulSystemPrompt()` → systemPrompt prefix
-- typecheck: Exit 0 ✅
-
-### ✅ semantic-context.md v2.0 — /mt-arch Mastertable (2026-04-02)
-- Nordstern (Founder Vision), 5 Directives, 9 Gotchas, 4 SGs, Dependency Graph, Modul-Index
 
 ## Wo finde ich was?
 
@@ -37,7 +41,7 @@
 | Was | Wo |
 |-----|-----|
 | Kern-Orchestrator | `server/src/services/heartbeat.ts` (4.055 LoC) |
-| **Soul-Loader** | `server/src/adapters/hermes-cloud/soul-loader.ts` ← NEU |
+| Soul-Loader | `server/src/adapters/hermes-cloud/soul-loader.ts` |
 | Memory Lifecycle | `server/src/adapters/hermes-cloud/memory-lifecycle.ts` |
 | Honcho Client | `server/src/adapters/hermes-cloud/honcho-client.ts` |
 | Execute Bridge | `server/src/adapters/hermes-cloud/execute.ts` |
@@ -45,14 +49,12 @@
 | Hermes Worker | `workers/hermes-cloud/main.py` |
 
 ## Nächste Schritte (P1)
-1. **Custom Autarch-MCP-Server** — Supabase-Zugriff für Hermes-Agents direkt aus Paperclip DB.
-2. **Heartbeat-Cron aktivieren** — 5-Min-Intervall in Orchestrator enablen (`pnpm paperclipai onboard`).
-3. **heartbeat.ts Refactoring** — Monster File (4.055 LoC) nach Sub-Modulen aufteilen.
+1. **Deep E2E Test** — Full system test via autarch.app Browser
+2. **Custom Autarch-MCP-Server** — Supabase-Zugriff für Hermes-Agents
+3. **Heartbeat-Cron aktivieren** — 5-Min-Intervall
 
 ## Kürzliche Änderungen (diese Session)
-- `memory-bank/semantic-context.md` v2.0 — Founder Vision + /mt-arch Mastertable (350 Zeilen)
-- `.antigravity/logs/architect-memory.md` — SG-001–004, 7 Active Directives, Session Log
-- `server/src/adapters/hermes-cloud/soul-loader.ts` — NEU: Soul Profile Loader
-- `server/src/adapters/hermes-cloud/execute.ts` — Soul → systemPrompt prefix
-- `server/src/services/heartbeat.ts` — Soul pre-load block
-- `memory-bank/progress.md` — G-008 closed
+- `workers/hermes-cloud/main.py` — Unsupported kwargs entfernt (mcp_config_path, skills_dir)
+- `workers/hermes-cloud/config.py` — `.strip()` auf HERMES_CLOUD_SECRET
+- GCP Secret Manager — `nousresearch-api-key` angelegt + mounted
+- Cloud Run — Rev `hermes-cloud-worker-00021-s54` deployed, E2E verified

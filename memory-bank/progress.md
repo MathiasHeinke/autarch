@@ -67,8 +67,14 @@
 - **77 stale Docs** (>7 Tage), davon **3 kritisch stale** (>30 Tage)
 - **heartbeat.ts** als komplexestes Modul (4.038 LoC)
 
+### 🔧 Hermes Worker Production Fix (2026-04-03)
+- ✅ **Auth Fix:** `.strip()` on `HERMES_CLOUD_SECRET` — Whitespace from Secret Manager caused 401s
+- ✅ **AIAgent kwargs:** Removed unsupported `mcp_config_path` + `skills_dir` from `AIAgent.__init__()`
+- ✅ **NousResearch API Key:** Created in GCP Secret Manager + IAM Policy + Cloud Run mount
+- ✅ **E2E Inference:** Health=healthy, apiConnected=true, "Hello!" in 4135ms, $0.000145
+
 ## 🔄 In Arbeit (In Progress)
-- Keine aktiven Arbeitspakete.
+- Deep E2E System Test (autarch.app)
 
 ## 📋 Offen (To-Do)
 
