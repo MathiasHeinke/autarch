@@ -172,7 +172,8 @@ export async function persistNewMemories(
           try {
             const parsed = JSON.parse(match[1]);
             const parsedName = parsed.name ?? "";
-            const args = parsed.arguments ?? parsed;
+            const rawArgs = parsed.arguments ?? parsed;
+            const args = typeof rawArgs === "string" ? JSON.parse(rawArgs) : rawArgs;
 
             if (MEMORY_TOOL_NAMES.has(parsedName)) {
               extractMemoryFromInput({ name: parsedName, ...args }, "memory");
