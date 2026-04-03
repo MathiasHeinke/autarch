@@ -14,6 +14,7 @@ import { useLocation } from "../lib/router";
 const TOAST_COOLDOWN_WINDOW_MS = 10_000;
 const TOAST_COOLDOWN_MAX = 3;
 const RECONNECT_SUPPRESS_MS = 2000;
+const MAX_RECONNECT_ATTEMPTS = 5;
 const SOCKET_CONNECTING = 0;
 const SOCKET_OPEN = 1;
 
@@ -763,6 +764,7 @@ export function LiveUpdatesProvider({ children }: { children: ReactNode }) {
     const scheduleReconnect = () => {
       if (closed) return;
       reconnectAttempt += 1;
+      if (reconnectAttempt > MAX_RECONNECT_ATTEMPTS) return; // Give up silently; UI works via polling
       const delayMs = Math.min(15000, 1000 * 2 ** Math.min(reconnectAttempt - 1, 4));
       reconnectTimer = window.setTimeout(() => {
         reconnectTimer = null;
@@ -773,8 +775,7 @@ export function LiveUpdatesProvider({ children }: { children: ReactNode }) {
     const connect = () => {
       if (closed) return;
       const protocol = window.location.protocol === "https:" ? "wss" : "ws";
-      const wsHost = import.meta.env.VITE_WS_HOST || window.location.host;
-      const url = `${protocol}://${wsHost}/api/companies/${encodeURIComponent(liveCompanyId)}/events/ws`;
+      const url = `${protocol}://${window.location.host}/api/companies/${encodeURIComponent(liveCompanyId)}/events/ws`;
       const nextSocket = new WebSocket(url);
       socket = nextSocket;
 
