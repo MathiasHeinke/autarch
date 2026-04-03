@@ -15,11 +15,13 @@
     "memory": true,
     "delegation": true,
     "todo": true,
+    "skills": true,
+    "vision": true,
+    "session_search": true,
+    "mcp": true,
     "terminal": false,
     "code": false,
-    "browser": false,
-    "vision": false,
-    "skills": false
+    "browser": false
   },
   "safety": {
     "max_iterations": 50,

@@ -4,14 +4,14 @@ Request/response schemas with validation for security enforcement.
 """
 from pydantic import BaseModel, Field, field_validator
 from typing import Optional
-from config import ALLOWED_TOOLSETS, BLOCKED_TOOLSETS, MAX_ITERATIONS_HARD_CAP
+from config import ALLOWED_TOOLSETS, BLOCKED_TOOLSETS, MAX_ITERATIONS_HARD_CAP, COST_PER_RUN_HARD_CAP
 
 
 class MemoryEntry(BaseModel):
     """Single externalized memory/skill from the Paperclip DB."""
     key: str
     content: str
-    category: str = "memory"  # memory | skill | conversation
+    category: str = "memory"  # memory | skill | lesson | research | user_preference | conversation
     importance: int = 50
 
 
@@ -23,9 +23,12 @@ class ExecuteRequest(BaseModel):
     model: str = "hermes-4-405b"
     systemPrompt: str = ""
     context: dict = Field(default_factory=dict)
-    enabledToolsets: list[str] = Field(default_factory=lambda: ["web", "file", "memory"])
+    enabledToolsets: list[str] = Field(default_factory=lambda: ["web", "file", "memory", "delegate_task"])
     maxIterations: int = Field(default=20, ge=1, le=MAX_ITERATIONS_HARD_CAP)
     costCapPerRun: float = Field(default=5.0, gt=0)
+
+    # Self-learning: separate budget for post-run auto-extraction
+    learnerBudget: float = Field(default=0.50, ge=0)
 
     # Externalized Brain — injected by adapter from Paperclip DB
     memorySnapshot: list[MemoryEntry] = Field(default_factory=list)
@@ -57,7 +60,7 @@ class ExecuteRequest(BaseModel):
 
 class ExecuteEvent(BaseModel):
     """Single NDJSON event streamed back to the adapter."""
-    type: str  # thinking | response | tool_call | tool_result | usage | error | system
+    type: str  # thinking | response | tool_call | tool_result | usage | error | system | skill_created | mcp_tool_call
     content: Optional[str] = None
     name: Optional[str] = None
     input: Optional[dict] = None

@@ -34,7 +34,7 @@ steps:
       - '--min-instances=0'
       - '--max-instances=3'
       - '--timeout=300'
-      - '--set-env-vars=SERVE_UI=true,PAPERCLIP_DEPLOYMENT_MODE=local_trusted,PAPERCLIP_DEPLOYMENT_EXPOSURE=private,PAPERCLIP_MIGRATION_AUTO_APPLY=true,HOST=0.0.0.0'
+      - '--set-env-vars=SERVE_UI=true,PAPERCLIP_DEPLOYMENT_MODE=local_trusted,PAPERCLIP_DEPLOYMENT_EXPOSURE=private,PAPERCLIP_MIGRATION_AUTO_APPLY=true,HOST=0.0.0.0,HONCHO_API_URL=https://honcho-api-61066913791.europe-west1.run.app'
       - '--set-secrets=DATABASE_URL=paperclip-database-url:latest,BETTER_AUTH_SECRET=paperclip-auth-secret:latest,HERMES_CLOUD_WORKER_URL=hermes-cloud-worker-url:latest,HERMES_CLOUD_SECRET=hermes-cloud-secret:latest'
 
 images:

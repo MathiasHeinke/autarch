@@ -508,3 +508,13 @@ git merge upstream/main  # Konflikte NUR in workers/hermes-cloud/ + memory-bank/
 - Limit: 20 Comments max pro Heartbeat-Request (verhindert Token-Explosion)
 - Role-Mapping: `authorAgentId ? "assistant" : "user"` — natürliche Konversationshistorie
 
+
+### 2026-04-03 — Ship: feat(hermes): Autonomous Expansion — 5-Phase Transformation
+**Geänderte Module:** agent_memory.ts, execute.ts, memory-lifecycle.ts, index.ts, config.py, models.py, hermes.json, mcp.json [NEW], Dockerfile, main.py
+**Erkenntnisse:**
+- DB Unique Constraint MUSS VOR onConflictDoUpdate existieren
+- Honcho ist optional via isHonchoEnabled() — graceful fallback
+- Fire-and-forget Pattern für post-run Honcho-Ingestion
+- Cloud Run Deploy via gcloud run deploy --source=. baut remote
+**Abhängigkeiten:** agent_memory.ts → memory-lifecycle.ts → execute.ts; honcho-client.ts → execute.ts (optional)
+**Entscheidungen:** Hybrid A+C (built-in + MCP), Learner Budget $0.50, terminal PERMANENT BLOCKED, Cohere Transcribe pre-baked

@@ -1,4 +1,4 @@
-import { pgTable, uuid, text, timestamp, jsonb, index, integer } from "drizzle-orm/pg-core";
+import { pgTable, uuid, text, timestamp, jsonb, index, integer, uniqueIndex } from "drizzle-orm/pg-core";
 import { companies } from "./companies.js";
 import { agents } from "./agents.js";
 
@@ -11,9 +11,12 @@ import { agents } from "./agents.js";
  * and full audit trail of agent knowledge evolution.
  *
  * Categories:
- * - "memory"       — Learned facts, insights, context (standard Hermes memory)
- * - "skill"        — Acquired skills, recipes, procedures
- * - "conversation" — Conversation summaries for context restoration
+ * - "memory"          — Learned facts, insights, context (standard Hermes memory)
+ * - "skill"           — Acquired skills, recipes, procedures
+ * - "lesson"          — Lessons learned from failures/successes
+ * - "research"        — Research findings from web/Apify tools
+ * - "user_preference" — End-user preferences observed by the agent
+ * - "conversation"    — Conversation summaries for context restoration
  */
 export const agentMemory = pgTable(
   "agent_memory",
@@ -22,7 +25,7 @@ export const agentMemory = pgTable(
     companyId: uuid("company_id").notNull().references(() => companies.id),
     agentId: uuid("agent_id").notNull().references(() => agents.id),
 
-    /** Category discriminator — memory | skill | conversation */
+    /** Category discriminator */
     category: text("category").notNull().default("memory"),
 
     /** Human-readable key for dedup (e.g. "python-file-io", "user-prefers-tabs") */
@@ -44,15 +47,16 @@ export const agentMemory = pgTable(
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (table) => ({
+    /** UNIQUE constraint — enables proper upsert by (company, agent, key) */
+    companyAgentKeyUq: uniqueIndex("agent_memory_company_agent_key_uq").on(
+      table.companyId,
+      table.agentId,
+      table.key,
+    ),
     companyAgentCategoryIdx: index("agent_memory_company_agent_category_idx").on(
       table.companyId,
       table.agentId,
       table.category,
-    ),
-    companyAgentKeyIdx: index("agent_memory_company_agent_key_idx").on(
-      table.companyId,
-      table.agentId,
-      table.key,
     ),
     importanceIdx: index("agent_memory_importance_idx").on(
       table.companyId,

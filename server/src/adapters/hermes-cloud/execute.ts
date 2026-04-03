@@ -1,6 +1,8 @@
 import type { AdapterExecutionContext, AdapterExecutionResult } from "../types.js";
 import { scrubContextMessages } from "./pii-scrub.js";
 import { buildSoulSystemPrompt } from "./soul-loader.js";
+import { isHonchoEnabled, queryAgentInsights, ingestRunConversation } from "./honcho-client.js";
+import type { HonchoMessage } from "./honcho-client.js";
 
 /**
  * Hermes Cloud Adapter — execute
@@ -22,10 +24,13 @@ function asNumber(v: unknown, fallback: number): number {
 }
 
 // --- Allowed toolsets (HARD WHITELIST — no terminal, no process) ---
-const ALLOWED_TOOLSETS = new Set(["web", "file", "memory", "delegate_task"]);
+const ALLOWED_TOOLSETS = new Set([
+  "web", "file", "memory", "delegate_task",
+  "todo", "skills", "vision", "session_search", "mcp",
+]);
 
 function sanitizeToolsets(raw: unknown): string[] {
-  if (!Array.isArray(raw)) return ["web", "file", "memory"];
+  if (!Array.isArray(raw)) return ["web", "file", "memory", "delegate_task"];
   return raw.filter((t) => typeof t === "string" && ALLOWED_TOOLSETS.has(t));
 }
 
@@ -79,6 +84,20 @@ export async function execute(ctx: AdapterExecutionContext): Promise<AdapterExec
     ? (context as Record<string, string>).hermesHonchoInsight
     : undefined;
 
+  // --- Honcho: pre-run insight if not already injected via context ---
+  let resolvedHonchoInsight = honchoInsight;
+  if (!resolvedHonchoInsight && isHonchoEnabled()) {
+    try {
+      const insight = await queryAgentInsights(agent.companyId, agent.id);
+      if (insight?.content) {
+        resolvedHonchoInsight = insight.content;
+        await onLog("stdout", `[honcho] Pre-run insight generated (${insight.content.length} chars)\n`);
+      }
+    } catch {
+      // Non-fatal — Honcho is optional
+    }
+  }
+
   const payload = {
     agentId: agent.id,
     runId,
@@ -91,7 +110,8 @@ export async function execute(ctx: AdapterExecutionContext): Promise<AdapterExec
     costCapPerRun,
     memorySnapshot,
     skillsIndex,
-    ...(honchoInsight ? { honchoInsight } : {}),
+    ...(resolvedHonchoInsight ? { honchoInsight: resolvedHonchoInsight } : {}),
+    learnerBudget: asNumber(config.learnerBudget, 0.50),
   };
 
   // --- Execute with timeout ---
@@ -141,6 +161,28 @@ export async function execute(ctx: AdapterExecutionContext): Promise<AdapterExec
       } catch {
         // Non-JSON line — emit as raw stdout
         await onLog("stdout", line + "\n");
+      }
+    }
+
+    // --- Honcho: post-run conversation ingestion (non-blocking) ---
+    if (isHonchoEnabled() && exitCode === 0) {
+      const honchoMessages: HonchoMessage[] = [];
+      for (const line of lines) {
+        try {
+          const event = JSON.parse(line);
+          if (event.type === "response" && event.content) {
+            honchoMessages.push({ role: "assistant", content: event.content });
+          }
+        } catch { /* skip */ }
+      }
+      // Add original user message
+      const userMsg = scrubbedMessages.find((m: { role: string }) => m.role === "user");
+      if (userMsg) {
+        honchoMessages.unshift({ role: "user", content: userMsg.content });
+      }
+      if (honchoMessages.length > 0) {
+        // Fire-and-forget — don't block the response
+        ingestRunConversation(agent.companyId, agent.id, runId, honchoMessages).catch(() => {});
       }
     }
 

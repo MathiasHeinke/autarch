@@ -28,6 +28,7 @@ from config import (
     HERMES_CLOUD_SECRET,
     ALLOWED_TOOLSETS,
     BLOCKED_TOOLSETS,
+    MCP_CONFIG_PATH,
 )
 from models import ExecuteRequest, ExecuteEvent, HealthResponse
 
@@ -37,7 +38,7 @@ from models import ExecuteRequest, ExecuteEvent, HealthResponse
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
 logger = logging.getLogger("hermes-cloud-worker")
 
-app = FastAPI(title="Hermes Cloud Worker", version="0.4.0", docs_url=None, redoc_url=None)
+app = FastAPI(title="Hermes Cloud Worker", version="0.6.0", docs_url=None, redoc_url=None)
 
 # Lazy-loaded flag — checked once at startup
 _hermes_available: bool | None = None
@@ -188,6 +189,16 @@ async def execute(
             "## Cross-Session Insights (from Honcho reasoning engine)\n" + req.honchoInsight
         )
 
+    # Count externalized brain items for system prompt enrichment
+    memory_count = len(req.memorySnapshot)
+    skill_count = len(req.skillsIndex)
+    lesson_count = sum(1 for m in req.memorySnapshot if m.category == "lesson")
+    if memory_count or skill_count:
+        system_prompt_parts.append(
+            f"## Session Context\n"
+            f"You have {memory_count} memories, {skill_count} skills, and {lesson_count} lessons from previous sessions."
+        )
+
     system_prompt = "\n\n".join(system_prompt_parts) if system_prompt_parts else None
 
     # Build enabled toolsets — filter through security whitelist
@@ -212,6 +223,10 @@ async def execute(
             if "/" not in resolved_model:
                 resolved_model = f"nousresearch/{resolved_model}"
 
+            # Check for MCP config
+            import pathlib
+            mcp_config = MCP_CONFIG_PATH if pathlib.Path(MCP_CONFIG_PATH).exists() else None
+
             agent = AIAgent(
                 api_key=NOUSRESEARCH_API_KEY,
                 base_url="https://inference-api.nousresearch.com/v1",
@@ -225,6 +240,8 @@ async def execute(
                 disabled_toolsets=list(BLOCKED_TOOLSETS),
                 ephemeral_system_prompt=system_prompt,
                 session_id=req.runId or str(uuid.uuid4()),
+                mcp_config_path=mcp_config,
+                skills_dir="/app/skills",
             )
 
             yield system_event("AIAgent initialized — starting inference")
@@ -335,6 +352,48 @@ async def execute(
             "X-Hermes-Agent-Id": req.agentId,
         },
     )
+
+
+# ---------------------------------------------------------------------------
+# Transcription (Cohere Transcribe — self-hosted, Apache 2.0)
+# ---------------------------------------------------------------------------
+_transcriber = None
+
+def _get_transcriber():
+    """Lazy-load transcription pipeline to avoid import cost on health checks."""
+    global _transcriber
+    if _transcriber is not None:
+        return _transcriber
+    try:
+        from config import TRANSCRIPTION_MODEL
+        from transformers import pipeline
+        import torch
+        device = "cuda" if torch.cuda.is_available() else "cpu"
+        _transcriber = pipeline(
+            "automatic-speech-recognition",
+            model=TRANSCRIPTION_MODEL,
+            device=device,
+            trust_remote_code=True,
+        )
+        logger.info("Transcription model loaded: %s on %s", TRANSCRIPTION_MODEL, device)
+    except Exception as e:
+        logger.error("Failed to load transcription model: %s", str(e))
+        _transcriber = None
+    return _transcriber
+
+
+@app.post("/v1/transcribe")
+async def transcribe(
+    _auth: None = Depends(verify_gateway_secret),
+):
+    """Transcribe audio via Cohere Transcribe.
+    
+    Accepts multipart/form-data with an 'audio' file field.
+    Returns JSON with transcript and metadata.
+    """
+    from fastapi import UploadFile, File as FastAPIFile
+    # Re-import is intentional — this endpoint is rarely used
+    raise HTTPException(status_code=501, detail="Transcription endpoint ready — upload handler coming in next iteration")
 
 
 if __name__ == "__main__":
