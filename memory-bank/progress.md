@@ -73,8 +73,17 @@
 - ✅ **NousResearch API Key:** Created in GCP Secret Manager + IAM Policy + Cloud Run mount
 - ✅ **E2E Inference:** Health=healthy, apiConnected=true, "Hello!" in 4135ms, $0.000145
 
+### 🧪 Deep E2E Test (2026-04-03, 19:07-19:27)
+- ✅ **Phase 1:** Infrastructure Smoke — 4/4 passed (Worker, UI, Login, Company)
+- ✅ **Phase 2:** Agent Inference Pipeline — 4/4 passed (ARE-6, Run 199cbd0d, "Hello from Hermes!", 3637ms)
+- ✅ **Phase 3:** Memory Persistence — 4/4 passed after bugfix
+  - 🐛 **Bug found:** `memory-lifecycle.ts` — Hermes `arguments` is JSON string, not object → empty content
+  - 🔧 **Fix:** `typeof rawArgs === "string" ? JSON.parse(rawArgs) : rawArgs`
+  - ✅ **Retest:** ARE-8, Run 79299908 → "Company is ARES, product is Bio.OS" korrekt gespeichert
+- ⚠️ **Phase 4:** Known Issues — WebSocket failures, heartbeat 404s, doppelter Company Name (non-critical)
+
 ## 🔄 In Arbeit (In Progress)
-- Deep E2E System Test (autarch.app)
+- Heartbeat Cron (5min Intervall) im Orchestrator aktivieren
 
 ## 📋 Offen (To-Do)
 
