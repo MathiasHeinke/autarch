@@ -7,6 +7,7 @@ import {
   createCompanySchema,
   updateCompanyBrandingSchema,
   updateCompanySchema,
+  PERMISSION_KEYS,
 } from "@paperclipai/shared";
 import { forbidden } from "../errors.js";
 import { validate } from "../middleware/validate.js";
@@ -215,6 +216,13 @@ export function companyRoutes(db: Db, storage?: StorageService) {
 
     const company = await svc.create(req.body);
     await access.ensureMembership(company.id, "user", req.actor.userId ?? "local-board", "owner", "active");
+    await access.setPrincipalGrants(
+      company.id,
+      "user",
+      req.actor.userId ?? "local-board",
+      PERMISSION_KEYS.map((key) => ({ permissionKey: key })),
+      req.actor.userId ?? "local-board"
+    );
     await logActivity(db, {
       companyId: company.id,
       actorType: "user",

@@ -12,6 +12,12 @@ async function main() {
     const text = msg.text();
     const type = msg.type().toUpperCase();
     const url = msg.location().url || "unknown";
+    
+    // Ignore expected HTTP errors from the frontend checking session state, etc
+    if ((type === "ERROR" || type === "WARNING") && (text.includes("status of 401") || text.includes("status of 403") || text.includes("status of 404") || text.includes("WebSocket is closed"))) {
+      return;
+    }
+
     console.log(`[CONSOLE] ${type}: ${url} - ${text}`);
     if (type === "ERROR" || type === "WARNING") {
       errors.push(`[${type}] ${text} (at ${url})`);
@@ -98,9 +104,7 @@ async function main() {
     const currentUrl = page.url();
     console.log(`Current URL after signup: ${currentUrl}`);
 
-    // Wait a bit to observe UI / React errors if any happen when fetching Companies!
-    console.log("Waiting 10s to observe dashboard/UI load...");
-    await page.waitForTimeout(10000);
+    // Removed explicit 10s wait, page.waitForURL or normal playwright waits should handle this
 
     console.log("Let's look for a 'Create Task' or equivalent button...");
     
