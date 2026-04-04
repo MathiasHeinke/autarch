@@ -15,6 +15,8 @@ RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
 RUN mkdir -p /root/.hermes /app/skills
 
 # Copy Hermes configuration + MCP config
+# config.yaml is the PRIMARY config — hermes-agent reads mcp_servers from here
+COPY config/config.yaml /root/.hermes/config.yaml
 COPY config/hermes.json /root/.hermes/config.json
 COPY config/mcp.json /root/.hermes/mcp.json
 
