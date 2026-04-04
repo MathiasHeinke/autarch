@@ -15,7 +15,7 @@ import asyncio
 import time
 import logging
 import uuid
-from typing import AsyncGenerator
+from typing import AsyncGenerator, Optional
 
 from fastapi import FastAPI, HTTPException, Depends, Header
 from fastapi.responses import StreamingResponse, JSONResponse
@@ -42,7 +42,7 @@ logger = logging.getLogger("hermes-cloud-worker")
 app = FastAPI(title="Hermes Cloud Worker", version="0.7.0", docs_url=None, redoc_url=None)
 
 # Lazy-loaded flag — checked once at startup
-_hermes_available: bool | None = None
+_hermes_available: Optional[bool] = None
 
 
 def _check_hermes_library() -> bool:
@@ -202,8 +202,53 @@ async def execute(
 
     system_prompt = "\n\n".join(system_prompt_parts) if system_prompt_parts else None
 
-    # Build enabled toolsets — filter through security whitelist
+    # Build enabled toolsets — filter through security whitelist (must be before MCP guidance injection)
     safe_toolsets = [t for t in req.enabledToolsets if t in ALLOWED_TOOLSETS and t not in BLOCKED_TOOLSETS]
+
+    # Inject Apify MCP guidance when agent has mcp toolset access
+    # This prevents the search_files loop: agent knows its tools explicitly
+    if "mcp" in safe_toolsets:
+        mcp_guidance = """\
+## Apify MCP Tools — Pre-Connected, Use Immediately
+
+**CRITICAL: Do NOT use search_files or read_file to look up how to use these tools.**
+**Do NOT loop on filesystem operations. Use MCP tools directly on the first iteration.**
+
+You have these Apify tools available RIGHT NOW:
+
+| Tool | Usage |
+|------|-------|
+| `search_actors` | Find actors by keyword: `search_actors(query="web scraper")` |
+| `fetch_actor_details` | Get input schema: `fetch_actor_details(actorId="apify/rag-web-browser")` |
+| `call_actor` | Run an actor: `call_actor(actorId="apify/rag-web-browser", input={...})` |
+| `get_actor_output` | Get async results: `get_actor_output(runId="...")` |
+| `get_dataset_items` | Access dataset: `get_dataset_items(datasetId="...")` |
+
+**Standard workflow for ANY web scraping task:**
+1. `call_actor("apify/rag-web-browser", {"query": "<URL or topic>", "maxResults": 3})`
+2. Read and process the Markdown output returned
+3. Save findings to memory/file
+
+**Key Actor IDs (use directly without search):**
+- `apify/rag-web-browser` — scrape any URL → returns full Markdown content
+- `apify/website-content-crawler` — deep site crawl
+- `apify/google-search-scraper` — Google SERP → JSON
+- `trudax/reddit-scraper-lite` — Reddit posts/comments
+- `clockworks/tiktok-scraper` — TikTok data
+
+**Example inputs:**
+```json
+// Scrape specific URL:
+call_actor("apify/rag-web-browser", {"query": "https://example.com", "maxResults": 1})
+
+// Research topic:
+call_actor("apify/rag-web-browser", {"query": "AI agent frameworks 2025", "maxResults": 5})
+```
+
+If an Actor fails, retry once with adjusted parameters. Never give up by falling back to local files."""
+
+        system_prompt = (system_prompt + "\n\n" + mcp_guidance) if system_prompt else mcp_guidance
+
 
     async def generate() -> AsyncGenerator[str, None]:
         start = time.time()

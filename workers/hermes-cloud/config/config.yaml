@@ -8,12 +8,37 @@ model: gemini-3.1-pro-preview
 provider: google
 api_base: "https://generativelanguage.googleapis.com/v1beta/openai/"
 
-# MCP Server Configuration — Apify hosted Streamable HTTP endpoint
-# Uses Bearer token authentication via APIFY_API_KEY env var
+# ---------------------------------------------------------------------------
+# MCP Server Configuration — Apify Streamable HTTP (MCP spec 2024-11-05)
+# ---------------------------------------------------------------------------
+# NOTE: SSE transport (mcp.apify.com/sse) was REMOVED on April 1, 2026.
+# The new endpoint uses Streamable HTTP at https://mcp.apify.com (no /sse).
+# The MCP SDK automatically sends 'Accept: application/json, text/event-stream'
+# to conform to the Streamable HTTP spec.
+#
+# Available tools from this server:
+#   search_actors       — find Actors by name/keyword in Apify Store
+#   fetch_actor_details — get README + input schema for a specific Actor
+#   call_actor          — execute an Actor with a given input (sync or async)
+#   get_actor_output    — retrieve results from a completed Actor run
+#   get_dataset_items   — list items from an Actor's dataset output
+#
+# WORKFLOW for web scraping tasks:
+#   1. call search_actors(query="web scraper for X")  → get actorId
+#   2. call fetch_actor_details(actorId)               → understand input schema
+#   3. call call_actor(actorId, input={...})           → run it, get runId
+#   4. call get_actor_output(runId)                    → fetch extracted content
+#
+# KEY ACTORS:
+#   apify/rag-web-browser        — scrape any URL, returns Markdown
+#   apify/website-content-crawler — deep crawl with structured output
+#   apify/google-search-scraper  — SERP results as JSON
+#   clockworks/tiktok-scraper    — TikTok content extraction
+#   trudax/reddit-scraper-lite   — Reddit post/comment scraping
 mcp_servers:
   apify:
-    url: "https://mcp.apify.com/sse"
+    url: "https://mcp.apify.com"
     headers:
       Authorization: "Bearer ${APIFY_API_KEY}"
-    timeout: 180
-    connect_timeout: 60
+    timeout: 300
+    connect_timeout: 30
