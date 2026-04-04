@@ -37,7 +37,6 @@ import {
 import { DEFAULT_CURSOR_LOCAL_MODEL } from "@paperclipai/adapter-cursor-local";
 import { DEFAULT_GEMINI_LOCAL_MODEL } from "@paperclipai/adapter-gemini-local";
 import { resolveRouteOnboardingOptions } from "../lib/onboarding-route";
-import { AsciiArtAnimation } from "./AsciiArtAnimation";
 import { OpenCodeLogoIcon } from "./OpenCodeLogoIcon";
 import {
   Building2,
@@ -627,25 +626,20 @@ export function OnboardingWizard() {
         {/* Plain div instead of DialogOverlay — Radix's overlay wraps in
             RemoveScroll which blocks wheel events on our custom (non-DialogContent)
             scroll container. A plain div preserves the background without scroll-locking. */}
-        <div className="fixed inset-0 z-50 bg-background" />
-        <div className="fixed inset-0 z-50 flex" onKeyDown={handleKeyDown}>
+        <div className="fixed inset-0 z-50 bg-black dark" />
+        <div className="fixed inset-0 z-50 flex dark text-slate-100" onKeyDown={handleKeyDown}>
           {/* Close button */}
           <button
             onClick={handleClose}
-            className="absolute top-4 left-4 z-10 rounded-sm p-1.5 text-muted-foreground/60 hover:text-foreground transition-colors"
+            className="absolute top-4 left-4 z-10 rounded-sm p-1.5 text-slate-400 hover:text-white transition-colors"
           >
             <X className="h-5 w-5" />
             <span className="sr-only">Close</span>
           </button>
 
-          {/* Left half — form */}
-          <div
-            className={cn(
-              "w-full flex flex-col overflow-y-auto transition-[width] duration-500 ease-in-out",
-              step === 1 ? "md:w-1/2" : "md:w-full"
-            )}
-          >
-            <div className="w-full max-w-md mx-auto my-auto px-8 py-12 shrink-0">
+          {/* Centered form */}
+          <div className="w-full flex flex-col overflow-y-auto items-center justify-center">
+            <div className="w-full max-w-md px-8 py-12 shrink-0">
               {/* Progress tabs */}
               <div className="flex items-center gap-0 mb-8 border-b border-border">
                 {(
@@ -1261,15 +1255,6 @@ export function OnboardingWizard() {
             </div>
           </div>
 
-          {/* Right half — ASCII art (hidden on mobile) */}
-          <div
-            className={cn(
-              "hidden md:block overflow-hidden bg-[#1d1d1d] transition-[width,opacity] duration-500 ease-in-out",
-              step === 1 ? "w-1/2 opacity-100" : "w-0 opacity-0"
-            )}
-          >
-            <AsciiArtAnimation />
-          </div>
         </div>
       </DialogPortal>
     </Dialog>
