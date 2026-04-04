@@ -38,17 +38,26 @@
 
 - **HERMES_STATELESS:** Worker = `skip_memory=True, persist_session=False`. Immer. Keine Ausnahme.
 - **COMPANY_SCOPING:** Jede DB-Query MUSS `company_id` filter haben. Cross-tenant Leakage = Showstopper.
-- **TOOLSET_WHITELIST:** `{web, file, memory, delegate_task}` — kein `terminal`, `process`, `shell`.
+- **TOOLSET_WHITELIST:** `{web, file, memory, delegate_task, hire_employee, mcp, skills, todo}` — kein `terminal`, `process`, `shell`.
 - **UPSTREAM_NATIVITÄT:** Paperclip-Core-Dateien außerhalb der 5 Autarch-Bereiche sind tabu.
 - **HONCHO_NON_FATAL:** Hermes-Execution blockiert NIE auf Honcho-Verfügbarkeit.
 - **PII_SCRUBBING:** Context Messages IMMER durch `pii-scrub.ts` vor Dispatch zu externen LLMs.
 - **COST_CAP:** `maxIterations ≤ 50`, `costCapPerRun ≤ $5.00` — hard enforced im Worker.
+- **ANTI_HALLUCINATION:** Alle hired agents erhalten automatisch `anti_hallucination_directive` memory (importance: 110). Fallback-Kette: Tool → Apify MCP → Report Failure. NIEMALS Inhalte erfinden.
+- **APIFY_MCP_HOSTED:** Apify MCP via Streamable HTTP (`mcp.apify.com`), Bearer Auth. 23 Actors konfiguriert. SSE deprecated seit 2026-04-01.
 
 ---
 
 ## Layer 3: Session Log
 
 > *IMMER einen Eintrag schreiben — auch bei kleinen Fixes.*
+
+### Session 2026-04-04 — feat(hermes-cloud): Apify MCP Migration + Anti-Hallucination Hardening + Autonomous Delegation
+- **Thema:** Drei kritische Systeme gehärtet: (1) Autonomous Delegation Pipeline (CEO→Scout hire_employee), (2) Anti-Hallucination Directive Injection für alle hired agents, (3) Apify MCP Migration von lokaler npx-Installation zu hosted Streamable HTTP endpoint.
+- **Ergebnis:** `memory-lifecycle.ts`: adapterConfig-Vererbung für sub-agents + anti_hallucination_directive memory injection (importance: 110). `execute.ts`: hire_employee + mcp zu ALLOWED_TOOLSETS. `config/mcp.json`: SSE→Streamable HTTP (`mcp.apify.com?tools=...`), Bearer Auth, 23 Actors (rag-web-browser, ai-web-scraper, puppeteer, instagram, youtube-transcript, tiktok, reddit, linkedin, twitter, facebook, google-trends, google-news, website-content-crawler). `Dockerfile`: npm global install entfernt (hosted endpoint, kleineres Image). APIFY_API_KEY auf Cloud Run gesetzt. Cloud Run Revision `hermes-cloud-00008-pdc` deployed. Git: `09583f58`.
+- **Root Cause (Halluzination):** Scout Agent erhielt leeren HTTP-Response von bio-os.io (Next.js SPA, kein SSR). Agent halluzinierte statt Fehler zu melden. Fix: (1) Directive Injection verhindert Fabrikation, (2) Apify rag-web-browser führt echtes JS-Rendering durch.
+- **Architektur-Entscheidung:** APIFY_MCP_HOSTED als neue Directive in Layer 2. Keine lokale MCP-Server-Installation mehr im Worker. Hermes-agent v0.7.0 unterstützt `headers` + `StreamableHTTP` nativ (tools/mcp_tool.py L861/890).
+- **Offene Punkte:** E2E Smoke Test: CEO→Scout→bio-os.io scrape mit neuem Apify MCP. GOOGLE_API_KEY Env-Var auf Cloud Run prüfen (health: degraded/apiConnected: false).
 
 ### Session 2026-04-03 — feat(hermes): Gemini Migration v0.7.0 — NousResearch → Gemini Backend
 - **Thema:** Hermes Cloud Worker Inference-Backend von NousResearch (hermes-4-405b) auf Google Gemini (gemini-3.1-pro-preview) migriert. `hermes-agent` Library vollständig erhalten — reiner 3-Parameter-Swap (base_url, api_key, model).
