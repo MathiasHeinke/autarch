@@ -50,7 +50,7 @@
 - **Details:** → `docs/wiki/openrouter-integration.md`
 
 ## Datenbank & Environment
-- **Produktion:** Supabase PostgreSQL (Projekt `svmlkfqhwzwomlsptliz`, eu-central-1).
+- **Produktion:** Supabase PostgreSQL (Projekt `sdukmitswmvbcznhpskm`, eu-west-1, "Autarch.OS").
 - **Dev-Setup:** Eingebetteter PGlite (via unset `DATABASE_URL`).
 - **Dev-Commands:** `pnpm dev` startet `server` + `ui`.
 - **RLS:** Company-Scoped Row Level Security auf allen Tabellen.

@@ -4,6 +4,15 @@
 
 ---
 
+### 2026-04-04 — UI: Centered Layouts & Dark Mode Enforcement
+
+- **Was:** AsciiArtAnimation entfernt, Auth.tsx und OnboardingWizard.tsx zentriert, Hintergrund auf schwarz gesetzt und Strategos "A" statt Sparkles eingebaut.
+- **Ergebnis:** Cleaneres, ablenkungsfreies Login- und Onboarding-Erlebnis im Fokus-Modus. Änderungen committed und gepushed.
+- **Offen:** UX Feedback abwarten, ob die restliche App an Strategos angeglichen werden soll.
+- **Betroffene Dateien:** `ui/src/pages/Auth.tsx`, `ui/src/components/OnboardingWizard.tsx`
+
+---
+
 ### 2026-04-02 — G-008 CLOSED: Soul-Loader shipped + semantic-context v2.0
 
 - **Was:** (1) /mt-arch Mastertable: semantic-context.md v2.0 mit Founder Vision "Go Native" als Architektur-Gesetz geschrieben. (2) soul-loader.ts implementiert: lädt SOUL.md/AGENTS.md/HEARTBEAT.md aus workers/agents/{profileName}/ → heartbeat pre-load → execute.ts systemPrompt. G-008 aus semantic-context geschlossen.

@@ -52,6 +52,12 @@
 
 > *IMMER einen Eintrag schreiben — auch bei kleinen Fixes.*
 
+### Session 2026-04-04 — UI Polish: Centered Auth & Onboarding + Dark Mode
+- **Thema:** Anpassung von Login und Onboarding Screens gemäß Fokus-UX Vorgabe ("unbedingt mittig", "black vorerst").
+- **Ergebnis:** `Auth.tsx` und `OnboardingWizard.tsx` zentriert, AsciiArtAnimation aus beiden entfernt, Hintergrund fest auf schwarz, generisches Sparkles-Icon durch ein klares "A" (Strategos-Vibes) ersetzt.
+- **Architektur-Entscheidung:** Weniger visuelles "Noise" während Login/Onboarding zugunsten konzentrierterer, cleanerer Experience.
+- **Offene Punkte:** UX Feedback, ob die restliche App an das Strategos-Niveau angepasst werden soll.
+
 ### Session 2026-04-04 — feat(hermes-cloud): Apify MCP Migration + Anti-Hallucination Hardening + Autonomous Delegation
 - **Thema:** Drei kritische Systeme gehärtet: (1) Autonomous Delegation Pipeline (CEO→Scout hire_employee), (2) Anti-Hallucination Directive Injection für alle hired agents, (3) Apify MCP Migration von lokaler npx-Installation zu hosted Streamable HTTP endpoint.
 - **Ergebnis:** `memory-lifecycle.ts`: adapterConfig-Vererbung für sub-agents + anti_hallucination_directive memory injection (importance: 110). `execute.ts`: hire_employee + mcp zu ALLOWED_TOOLSETS. `config/mcp.json`: SSE→Streamable HTTP (`mcp.apify.com?tools=...`), Bearer Auth, 23 Actors (rag-web-browser, ai-web-scraper, puppeteer, instagram, youtube-transcript, tiktok, reddit, linkedin, twitter, facebook, google-trends, google-news, website-content-crawler). `Dockerfile`: npm global install entfernt (hosted endpoint, kleineres Image). APIFY_API_KEY auf Cloud Run gesetzt. Cloud Run Revision `hermes-cloud-00008-pdc` deployed. Git: `09583f58`.

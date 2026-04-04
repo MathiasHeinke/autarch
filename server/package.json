@@ -87,7 +87,6 @@
     "@types/puppeteer": "^7.0.4",
     "@types/sharp": "^0.32.0",
     "@types/supertest": "^6.0.2",
-    "@types/uuid": "^11.0.0",
     "@types/ws": "^8.18.1",
     "cross-env": "^10.1.0",
     "puppeteer": "^24.40.0",

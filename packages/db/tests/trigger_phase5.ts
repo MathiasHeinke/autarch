@@ -33,7 +33,7 @@ async function main() {
   const updatedConfig = {
     ...ceo.adapter_config,
     model: "gemini-3.1-pro-preview",
-    workerUrl: "https://hermes-cloud-worker-61066913791.europe-west1.run.app",
+    workerUrl: "https://hermes-cloud-950535292904.europe-west1.run.app",
     enabledToolsets: ["web", "file", "memory", "delegate_task", "hire_employee", "mcp", "skills", "todo"],
     maxIterations: 30,
     costCapPerRun: 5.0,

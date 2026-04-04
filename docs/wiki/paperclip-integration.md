@@ -1199,7 +1199,7 @@ SERVE_UI=false                              # Autarch nutzt eigenes Frontend
 PAPERCLIP_AUTH_DISABLE_SIGN_UP=true         # ⚠️ PFLICHT nach erstem Account
 
 # === Supabase ===
-VITE_SUPABASE_URL=https://svmlkfqhwzwomlsptliz.supabase.co
+VITE_SUPABASE_URL=https://sdukmitswmvbcznhpskm.supabase.co
 VITE_SUPABASE_ANON_KEY=eyJ...
 
 # === LLM Provider ===

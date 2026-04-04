@@ -99,6 +99,10 @@
 - ✅ **Cloud Run:** Revision 00024-6jb deployed, Health: `{status: healthy, version: 0.7.0}`
 - ✅ **Git:** Commit `f5f8cdca`, pushed to master
 
+### 🎨 Frontend UI Polish (2026-04-04)
+- ✅ **Auth & Onboarding:** Layout zentriert, AsciiArt Animationen entfernt, Dark-Mode-Background erzwungen.
+- ✅ **Branding:** "A" Icon (Strategos) für Login statt generischem Sparkle.
+
 ## 🔄 In Arbeit (In Progress)
 - E2E Smoke Test mit Gemini-Backend (echten Agent-Run über Paperclip UI triggern)
 
@@ -129,7 +133,7 @@
 
 ### 🚀 Cloud-Native Deployment (2026-04-02)
 - ✅ **Vercel** — UI deployed auf `autarch.app` (Domain bei AllInkl via CNAME)
-- ✅ **Cloud Run** — Paperclip Server (`paperclip-server`) + Hermes Worker (`hermes-cloud-worker`) in `ares-488111`
+- ✅ **Cloud Run** — Paperclip Server (`paperclip-server`) + Hermes Worker (`hermes-cloud`) in `swarm-490407` (GCP: "Autarch OS")
 - ✅ **Supabase** — Production DB `Autarch.OS` (`sdukmitswmvbcznhpskm`, eu-west-1)
 - ✅ **Admin Bootstrap** — User `mathias@ares-bio.com` als `instance_admin` promoted
 - ✅ **NousResearch API** — ~~Hermes-4-405B~~ → Replaced by Gemini 3.1 Pro Preview (v0.7.0, 2026-04-03)
@@ -138,9 +142,9 @@
 
 ## ⚠️ Known Issues / Blocker
 - ~~**Honcho noch nicht deployed**~~ → ✅ Deployed: Docker Compose `localhost:8100` (v3.0.3)
-- ~~**Cloud Run Worker noch nicht deployed**~~ → ✅ Deployed: `hermes-cloud-worker-61066913791.europe-west1.run.app`
+- ~~**Cloud Run Worker noch nicht deployed**~~ → ✅ Deployed: `hermes-cloud-950535292904.europe-west1.run.app`
 - ~~**Hermes Response wrapped in tool_call**~~ → ✅ Fixed: `is not None` check (Hotfix, 97% Token-Reduction)
-- ~~**Paperclip Server nur lokal**~~ → ✅ Cloud Run: `paperclip-server-61066913791.europe-west1.run.app`
+- ~~**Paperclip Server nur lokal**~~ → ✅ Cloud Run: `paperclip-server-950535292904.europe-west1.run.app` (GCP: Autarch OS)
 - ~~**NousResearch API Key falsch**~~ → ✅ Fixed: Key `autarch_os` deployed
 - ~~**EETA Test-Companies**~~ → ✅ Gelöscht: Full FK-Kaskade (48 Tabellen)
 - ~~**Agent Memory leer**~~ → ✅ Fixed: JSON-String Parsing in memory-lifecycle.ts

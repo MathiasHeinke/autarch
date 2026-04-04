@@ -340,7 +340,7 @@ git merge upstream/main  # Konflikte NUR in workers/hermes-cloud/ + memory-bank/
 - `Dockerfile` — Multi-stage pnpm Docker Build, tsx aus `./node_modules/.bin/tsx`, WORKDIR /app/server
 - `.gcloudignore` — dist/ inkludiert, node_modules exkludiert
 - `server/Dockerfile` — Legacy Dockerfile Referenz
-- `vercel.json` — API rewrites → `https://paperclip-server-61066913791.europe-west1.run.app/api/*`
+- `vercel.json` — API rewrites → `https://paperclip-server-950535292904.europe-west1.run.app/api/*`
 - `server/src/adapters/hermes-cloud/execute.ts` — Cloud Worker URL Anpassung
 - `workers/hermes-cloud/main.py` — Worker-Fixes
 - `memory-bank/e2e-master-plan.md` — [NEU] E2E-Masterplan

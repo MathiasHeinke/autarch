@@ -1,4 +1,4 @@
-# Active Context — Session 2026-04-03 #3 (Gemini Migration v0.7.0)
+# Active Context — Session 2026-04-04 #1 (UI Polish)
 
 ## Aktueller Fokus
 Hermes Cloud Worker von NousResearch auf Gemini migriert. Deployed und healthy.
@@ -12,14 +12,15 @@ Hermes Cloud Worker von NousResearch auf Gemini migriert. Deployed und healthy.
 6. **Phase 4 ✅** — GCP Secret `google-api-key` angelegt, IAM Binding gesetzt, Cloud Run Deploy Revision 00024-6jb
 7. **Health Check ✅** — `{status: healthy, model: gemini-3.1-pro-preview, version: 0.7.0, apiConnected: true}`
 8. **Ship ✅** — Git commit `f5f8cdca`, pushed to master
+9. **UI Polish ✅** — Auth & Onboarding zentriert, Ascii-Art Animation entfernt, Hintergrund auf schwarz gesetzt (Git commit `a05114c7`, pushed)
 
 ## Kritische Kennzahlen
 - **Production Worker:** hermes-cloud-worker v0.7.0 (Gemini 3.1 Pro Preview)
 - **Inference Backend:** `https://generativelanguage.googleapis.com/v1beta/openai/`
 - **Flash Model:** gemini-3-flash-preview (auto-routed für simple tasks)
-- **Server:** paperclip-server (Cloud Run, ares-488111)
+- **Server:** paperclip-server (Cloud Run, swarm-490407 "Autarch OS")
 - **DB:** Supabase `sdukmitswmvbcznhpskm` (Autarch.OS)
-- **GCP Project:** `ares-488111`
+- **GCP Project:** `swarm-490407` ("Autarch OS")
 - **GCP Account:** `marketing@mathiasheinke.de`
 
 ## Known Issues
