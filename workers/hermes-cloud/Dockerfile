@@ -36,8 +36,8 @@ RUN python3 -c "from transformers import AutoModelForSpeechSeq2Seq, AutoProcesso
     AutoProcessor.from_pretrained('CohereLabs/cohere-transcribe-03-2026', trust_remote_code=True)" \
     || echo "WARN: Model pre-download failed — will download on first use"
 
-# Pre-install MCP Apify server so first call is fast
-RUN npx -y @apify/actors-mcp-server --help || true
+# NOTE: Apify MCP now uses hosted SSE endpoint (https://mcp.apify.com/sse)
+# No local npx/npm install needed — all actors served by Apify's cloud infrastructure
 
 # Copy our FastAPI wrapper application
 COPY main.py config.py models.py /app/
