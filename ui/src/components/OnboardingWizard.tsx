@@ -114,7 +114,7 @@ export function OnboardingWizard() {
 
   // Step 2
   const [agentName, setAgentName] = useState("CEO");
-  const [adapterType, setAdapterType] = useState<AdapterType>("claude_local");
+  const [adapterType, setAdapterType] = useState<AdapterType>("hermes_cloud");
   const [model, setModel] = useState("");
   const [command, setCommand] = useState("");
   const [args, setArgs] = useState("");
@@ -289,7 +289,7 @@ export function OnboardingWizard() {
     setCompanyName("");
     setCompanyGoal("");
     setAgentName("CEO");
-    setAdapterType("claude_local");
+    setAdapterType("hermes_cloud");
     setModel("");
     setCommand("");
     setArgs("");
@@ -761,37 +761,65 @@ export function OnboardingWizard() {
                     <div className="grid grid-cols-2 gap-2">
                       {[
                         {
+                          value: "hermes_cloud" as const,
+                          label: "Hermes",
+                          icon: HermesIcon,
+                          desc: "Cloud-hosted Hermes agent engine",
+                          recommended: true,
+                          disabled: false
+                        },
+                        {
                           value: "claude_local" as const,
                           label: "Claude Code",
                           icon: Sparkles,
                           desc: "Local Claude agent",
-                          recommended: true
+                          disabled: true
                         },
                         {
                           value: "codex_local" as const,
                           label: "Codex",
                           icon: Code,
                           desc: "Local Codex agent",
-                          recommended: true
+                          disabled: true
+                        },
+                        {
+                          value: "gemini_local" as const,
+                          label: "Gemini CLI",
+                          icon: Gem,
+                          desc: "Local Gemini agent",
+                          disabled: true
+                        },
+                        {
+                          value: "opencode_local" as const,
+                          label: "OpenCode",
+                          icon: OpenCodeLogoIcon,
+                          desc: "Local multi-provider agent",
+                          disabled: true
+                        },
+                        {
+                          value: "cursor" as const,
+                          label: "Cursor",
+                          icon: MousePointer2,
+                          desc: "Local Cursor agent",
+                          disabled: true
                         }
                       ].map((opt) => (
                         <button
                           key={opt.value}
+                          disabled={opt.disabled}
                           className={cn(
                             "flex flex-col items-center gap-1.5 rounded-md border p-3 text-xs transition-colors relative",
-                            adapterType === opt.value
+                            opt.disabled
+                              ? "border-border opacity-40 cursor-not-allowed grayscale"
+                              : adapterType === opt.value
                               ? "border-foreground bg-accent"
                               : "border-border hover:bg-accent/50"
                           )}
                           onClick={() => {
+                            if (opt.disabled) return;
                             const nextType = opt.value as AdapterType;
                             setAdapterType(nextType);
-                            if (nextType === "codex_local" && !model) {
-                              setModel(DEFAULT_CODEX_LOCAL_MODEL);
-                            }
-                            if (nextType !== "codex_local") {
-                              setModel("");
-                            }
+                            setModel("");
                           }}
                         >
                           {opt.recommended && (
@@ -801,112 +829,12 @@ export function OnboardingWizard() {
                           )}
                           <opt.icon className="h-4 w-4" />
                           <span className="font-medium">{opt.label}</span>
-                          <span className="text-muted-foreground text-[10px]">
+                          <span className="text-muted-foreground text-[10px] text-center">
                             {opt.desc}
                           </span>
                         </button>
                       ))}
                     </div>
-
-                    <button
-                      className="flex items-center gap-1.5 mt-3 text-xs text-muted-foreground hover:text-foreground transition-colors"
-                      onClick={() => setShowMoreAdapters((v) => !v)}
-                    >
-                      <ChevronDown
-                        className={cn(
-                          "h-3 w-3 transition-transform",
-                          showMoreAdapters ? "rotate-0" : "-rotate-90"
-                        )}
-                      />
-                      More Agent Adapter Types
-                    </button>
-
-                    {showMoreAdapters && (
-                      <div className="grid grid-cols-2 gap-2 mt-2">
-                        {[
-                          {
-                            value: "gemini_local" as const,
-                            label: "Gemini CLI",
-                            icon: Gem,
-                            desc: "Local Gemini agent"
-                          },
-                          {
-                            value: "opencode_local" as const,
-                            label: "OpenCode",
-                            icon: OpenCodeLogoIcon,
-                            desc: "Local multi-provider agent"
-                          },
-                          {
-                            value: "pi_local" as const,
-                            label: "Pi",
-                            icon: Terminal,
-                            desc: "Local Pi agent"
-                          },
-                          {
-                            value: "cursor" as const,
-                            label: "Cursor",
-                            icon: MousePointer2,
-                            desc: "Local Cursor agent"
-                          },
-                          {
-                            value: "hermes_cloud" as const,
-                            label: "Hermes Cloud",
-                            icon: HermesIcon,
-                            desc: "Cloud-hosted Hermes agent"
-                          },
-                          {
-                            value: "openclaw_gateway" as const,
-                            label: "OpenClaw Gateway",
-                            icon: Bot,
-                            desc: "Invoke OpenClaw via gateway protocol",
-                            comingSoon: true,
-                            disabledLabel: "Configure OpenClaw within the App"
-                          }
-                        ].map((opt) => (
-                          <button
-                            key={opt.value}
-                            disabled={!!opt.comingSoon}
-                            className={cn(
-                              "flex flex-col items-center gap-1.5 rounded-md border p-3 text-xs transition-colors relative",
-                              opt.comingSoon
-                                ? "border-border opacity-40 cursor-not-allowed"
-                                : adapterType === opt.value
-                                ? "border-foreground bg-accent"
-                                : "border-border hover:bg-accent/50"
-                            )}
-                            onClick={() => {
-                              if (opt.comingSoon) return;
-                              const nextType = opt.value as AdapterType;
-                              setAdapterType(nextType);
-                              if (nextType === "gemini_local" && !model) {
-                                setModel(DEFAULT_GEMINI_LOCAL_MODEL);
-                                return;
-                              }
-                              if (nextType === "cursor" && !model) {
-                                setModel(DEFAULT_CURSOR_LOCAL_MODEL);
-                                return;
-                              }
-                              if (nextType === "opencode_local") {
-                                if (!model.includes("/")) {
-                                  setModel("");
-                                }
-                                return;
-                              }
-                              setModel("");
-                            }}
-                          >
-                            <opt.icon className="h-4 w-4" />
-                            <span className="font-medium">{opt.label}</span>
-                            <span className="text-muted-foreground text-[10px]">
-                              {opt.comingSoon
-                                ? (opt as { disabledLabel?: string })
-                                    .disabledLabel ?? "Coming soon"
-                                : opt.desc}
-                            </span>
-                          </button>
-                        ))}
-                      </div>
-                    )}
                   </div>
 
                   {/* Conditional adapter fields */}

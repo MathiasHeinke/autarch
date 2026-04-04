@@ -315,7 +315,6 @@ export function AgentConfigForm(props: AgentConfigFormProps) {
     adapterType === "claude_local" ||
     adapterType === "codex_local" ||
     adapterType === "gemini_local" ||
-    adapterType === "hermes_local" ||
     adapterType === "opencode_local" ||
     adapterType === "pi_local" ||
     adapterType === "cursor";
@@ -725,8 +724,6 @@ export function AgentConfigForm(props: AgentConfigFormProps) {
                       ? "codex"
                       : adapterType === "gemini_local"
                         ? "gemini"
-                        : adapterType === "hermes_local"
-                          ? "hermes"
                         : adapterType === "pi_local"
                           ? "pi"
                         : adapterType === "cursor"
@@ -748,18 +745,13 @@ export function AgentConfigForm(props: AgentConfigFormProps) {
                 }
                 open={modelOpen}
                 onOpenChange={setModelOpen}
-                allowDefault={adapterType !== "opencode_local" && adapterType !== "hermes_local"}
-                required={adapterType === "opencode_local" || adapterType === "hermes_local"}
+                allowDefault={adapterType !== "opencode_local"}
+                required={adapterType === "opencode_local"}
                 groupByProvider={adapterType === "opencode_local"}
-                creatable={adapterType === "hermes_local"}
-                detectedModel={adapterType === "hermes_local" ? detectedModel : null}
-                onDetectModel={adapterType === "hermes_local"
-                  ? async () => {
-                      const result = await refetchDetectedModel();
-                      return result.data?.model ?? null;
-                    }
-                  : undefined}
-                detectModelLabel={adapterType === "hermes_local" ? "Detect from Hermes config" : undefined}
+                creatable={false}
+                detectedModel={null}
+                onDetectModel={undefined}
+                detectModelLabel={undefined}
               />
               {fetchedModelsError && (
                 <p className="text-xs text-destructive">
@@ -1024,7 +1016,7 @@ function AdapterEnvironmentResult({ result }: { result: AdapterEnvironmentTestRe
 
 /* ---- Internal sub-components ---- */
 
-const ENABLED_ADAPTER_TYPES = new Set(["claude_local", "codex_local", "gemini_local", "opencode_local", "pi_local", "cursor", "hermes_local"]);
+const ENABLED_ADAPTER_TYPES = new Set(["hermes_cloud"]);
 
 /** Display list includes all real adapter types plus UI-only coming-soon entries. */
 const ADAPTER_DISPLAY_LIST: { value: string; label: string; comingSoon: boolean }[] = [

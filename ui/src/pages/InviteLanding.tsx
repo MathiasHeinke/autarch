@@ -25,7 +25,7 @@ const adapterLabels: Record<string, string> = {
   http: "HTTP",
 };
 
-const ENABLED_INVITE_ADAPTERS = new Set(["claude_local", "codex_local", "gemini_local", "opencode_local", "pi_local", "cursor", "hermes_local"]);
+const ENABLED_INVITE_ADAPTERS = new Set(["hermes_cloud"]);
 
 function dateTime(value: string) {
   return new Date(value).toLocaleString();
@@ -46,7 +46,7 @@ export function InviteLandingPage() {
   const token = (params.token ?? "").trim();
   const [joinType, setJoinType] = useState<JoinType>("human");
   const [agentName, setAgentName] = useState("");
-  const [adapterType, setAdapterType] = useState<AgentAdapterType>("claude_local");
+  const [adapterType, setAdapterType] = useState<AgentAdapterType>("hermes_cloud");
   const [capabilities, setCapabilities] = useState("");
   const [result, setResult] = useState<{ kind: "bootstrap" | "join"; payload: unknown } | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -193,7 +193,7 @@ export function InviteLandingPage() {
           )}
           {(onboardingSkillUrl || onboardingSkillPath || onboardingInstallPath) && (
             <div className="mt-3 space-y-1 rounded-md border border-border bg-muted/30 p-3 text-xs text-muted-foreground">
-              <p className="font-medium text-foreground">Paperclip skill bootstrap</p>
+              <p className="font-medium text-foreground">Autarch.OS skill bootstrap</p>
               {onboardingSkillUrl && <p className="font-mono break-all">GET {onboardingSkillUrl}</p>}
               {!onboardingSkillUrl && onboardingSkillPath && <p className="font-mono break-all">GET {onboardingSkillPath}</p>}
               {onboardingInstallPath && <p className="font-mono break-all">Install to {onboardingInstallPath}</p>}
@@ -229,10 +229,10 @@ export function InviteLandingPage() {
       <div className="rounded-lg border border-border bg-card p-6">
         <h1 className="text-xl font-semibold">
           {invite.inviteType === "bootstrap_ceo"
-            ? "Bootstrap your Paperclip instance"
+            ? "Bootstrap your Autarch.OS instance"
             : companyName
               ? `Join ${companyName}`
-              : "Join this Paperclip company"}
+              : "Join this Autarch.OS company"}
         </h1>
         <p className="mt-2 text-sm text-muted-foreground">
           {invite.inviteType !== "bootstrap_ceo" && companyName

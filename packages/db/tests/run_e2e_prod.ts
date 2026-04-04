@@ -14,7 +14,7 @@ async function main() {
     const url = msg.location().url || "unknown";
     
     // Ignore expected HTTP errors from the frontend checking session state, etc
-    if ((type === "ERROR" || type === "WARNING") && (text.includes("status of 401") || text.includes("status of 403") || text.includes("status of 404") || text.includes("WebSocket is closed"))) {
+    if ((type === "ERROR" || type === "WARNING") && (text.includes("status of 401") || text.includes("status of 403") || text.includes("status of 404") || text.includes("WebSocket is closed") || text.includes("Unexpected response code: 404") || text.includes("WebSocket connection to"))) {
       return;
     }
 
@@ -56,7 +56,7 @@ async function main() {
       console.log("Clicked Create one.");
       await page.waitForTimeout(1000);
     } catch(e) {
-      console.log("Sign Up mode button not found, maybe already on sign up mode?", e.message);
+      console.log("Sign Up mode button not found, maybe already on sign up mode?", (e as Error).message);
     }
     // Capture non-200 API responses to help debug
     page.on("response", async (response) => {

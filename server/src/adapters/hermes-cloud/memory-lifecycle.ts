@@ -263,7 +263,16 @@ export async function persistNewMemories(
     persisted++;
   }
 
-  // Create hired employees
+  // Create hired employees — inherit parent agent's adapter config
+  // so hired agents can execute on the same Cloud Run worker
+  const parentAgentRows = newAgents.length > 0
+    ? await db.select({ adapterConfig: agents.adapterConfig })
+        .from(agents)
+        .where(eq(agents.id, agentId))
+        .limit(1)
+    : [];
+  const parentConfig = parentAgentRows[0]?.adapterConfig ?? {};
+
   for (const agentReq of newAgents) {
     if (!agentReq.name) continue;
     const [newAgent] = await db.insert(agents).values({
@@ -271,6 +280,11 @@ export async function persistNewMemories(
       name: agentReq.name,
       role: agentReq.role,
       adapterType: "hermes_cloud",
+      adapterConfig: {
+        ...parentConfig,
+        // Ensure hired agent gets full toolset including mcp
+        enabledToolsets: ["web", "file", "memory", "mcp", "skills", "todo", "delegate_task"],
+      },
       status: "idle",
     }).returning({ id: agents.id });
     
@@ -285,6 +299,26 @@ export async function persistNewMemories(
         sourceRunId: runId,
       });
     }
+
+    // CRITICAL: Inject anti-hallucination + web-fallback directive for all hired agents.
+    // This prevents them from fabricating content when tools return empty results.
+    await db.insert(agentMemory).values({
+      companyId,
+      agentId: newAgent.id,
+      key: "anti_hallucination_directive",
+      content: [
+        "CRITICAL DIRECTIVE — NEVER HALLUCINATE TOOL RESULTS:",
+        "1. If web__scrape_url or web__get_url returns an empty string or very little content (<100 chars), DO NOT invent content. The page is likely JS-rendered.",
+        "2. FALLBACK CHAIN: scrape_url fails → try web__search to find cached/summarized info → try fetching via a different URL variant (e.g. https://www.{domain}) → report exactly what tools returned.",
+        "3. ALWAYS state tool results verbatim before analyzing them. Never paraphrase from memory.",
+        "4. If ALL web tools fail or return empty, EXPLICITLY say: 'I attempted to scrape [URL] but all tools returned empty. I cannot reliably summarize this page. Please try manually or provide the page content.'",
+        "5. You have access to: web__search (Google Search), web__scrape_url (HTTP fetch), web__get_url. Try all of them before giving up.",
+        "VIOLATION OF THIS DIRECTIVE = task failure."
+      ].join("\n"),
+      category: "lesson",
+      importance: 110,
+      sourceRunId: runId,
+    });
     persisted++;
   }
 

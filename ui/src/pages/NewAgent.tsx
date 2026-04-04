@@ -35,7 +35,6 @@ const SUPPORTED_ADVANCED_ADAPTER_TYPES = new Set<CreateConfigValues["adapterType
   "opencode_local",
   "pi_local",
   "cursor",
-  "hermes_local",
   "hermes_cloud",
   "openclaw_gateway",
 ]);

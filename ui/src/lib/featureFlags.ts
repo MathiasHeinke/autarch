@@ -15,10 +15,7 @@
  *
  * Set via VITE_HERMES_ONLY_MODE=true in .env
  * ────────────────────────────────────────────────────────────────────────── */
-export const HERMES_ONLY_MODE =
-  import.meta.env.VITE_HERMES_ONLY_MODE === "true";
+export const HERMES_ONLY_MODE = true;
 
 /** Default adapter type used when HERMES_ONLY_MODE is active */
-export const DEFAULT_ADAPTER_TYPE = HERMES_ONLY_MODE
-  ? "hermes_cloud"
-  : "claude_local";
+export const DEFAULT_ADAPTER_TYPE = "hermes_cloud";

@@ -26,12 +26,12 @@ function asNumber(v: unknown, fallback: number): number {
 
 // --- Allowed toolsets (HARD WHITELIST — no terminal, no process) ---
 const ALLOWED_TOOLSETS = new Set([
-  "web", "file", "memory", "delegate_task",
+  "web", "file", "memory", "delegate_task", "hire_employee",
   "todo", "skills", "vision", "session_search", "mcp",
 ]);
 
 function sanitizeToolsets(raw: unknown): string[] {
-  if (!Array.isArray(raw)) return ["web", "file", "memory", "delegate_task"];
+  if (!Array.isArray(raw)) return ["web", "file", "memory", "delegate_task", "hire_employee", "mcp", "skills", "todo"];
   return raw.filter((t) => typeof t === "string" && ALLOWED_TOOLSETS.has(t));
 }
 
