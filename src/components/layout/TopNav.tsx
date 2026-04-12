@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useMemo } from 'react';
 import { 
   TerminalSquare, 
   Building2, 
@@ -11,15 +11,23 @@ import {
 import { motion } from 'framer-motion';
 import { useLayoutStore } from '../../stores/layoutStore';
 import { useHermesStore } from '../../stores/hermesStore';
+import { activePreset } from '../../presets';
 
-const TABS = [
+// ─── Core tabs (always visible) ─────────────────────────────────
+const CORE_TABS_BEFORE = [
   { id: 'ide', icon: TerminalSquare, label: 'IDE' },
   { id: 'company', icon: Building2, label: 'Company OS' },
-  { id: 'marketing', icon: Megaphone, label: 'Marketing' },
+];
+const CORE_TABS_AFTER = [
   { id: 'agents', icon: Cpu, label: 'Agents' },
   { id: 'fleet', icon: Activity, label: 'Dashboard' },
   { id: 'settings', icon: Settings, label: 'Settings' },
 ];
+
+// Icon lookup for preset modules (keeps icons in one place)
+const MODULE_ICONS: Record<string, typeof Megaphone> = {
+  marketing: Megaphone,
+};
 
 export function TopNav() {
   const { activeTab, setActiveTab, setActiveContextView } = useLayoutStore();
@@ -28,6 +36,16 @@ export function TopNav() {
   useEffect(() => {
     startPolling();
   }, [startPolling]);
+
+  // Build tabs: core before + preset modules + core after
+  const tabs = useMemo(() => {
+    const presetTabs = activePreset.modules.map(m => ({
+      id: m.tab.id,
+      icon: MODULE_ICONS[m.id] ?? m.tab.icon,
+      label: m.tab.label,
+    }));
+    return [...CORE_TABS_BEFORE, ...presetTabs, ...CORE_TABS_AFTER];
+  }, []);
 
   return (
     <header 
@@ -61,7 +79,7 @@ export function TopNav() {
 
       {/* Module Tabs */}
       <nav className="flex items-center gap-1 flex-1">
-        {TABS.map((tab) => {
+        {tabs.map((tab) => {
           const isActive = activeTab === tab.id;
           return (
             <motion.button
