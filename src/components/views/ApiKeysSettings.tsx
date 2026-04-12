@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { syncToHermes, isHermesConfigAvailable } from '../../services/hermesBridge';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Key,
@@ -45,9 +46,6 @@ function loadMcpConfig(): string {
   } catch { return DEFAULT_MCP_CONFIG; }
 }
 
-function saveMcpConfig(json: string) {
-  localStorage.setItem(MCP_CONFIG_KEY, json);
-}
 
 const DEFAULT_MCP_CONFIG = JSON.stringify({
   mcpServers: {
@@ -598,9 +596,12 @@ function McpConfigEditor() {
   const [jsonError, setJsonError] = useState<string | null>(null);
   const [justSaved, setJustSaved] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [hermesSynced, setHermesSynced] = useState<string | null>(null);
+  const [hermesAvailable, setHermesAvailable] = useState(false);
 
   useEffect(() => {
     setConfig(loadMcpConfig());
+    isHermesConfigAvailable().then(setHermesAvailable);
   }, []);
 
   // Parse config to structured data
@@ -666,15 +667,26 @@ function McpConfigEditor() {
     }
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
+    let configToSave = config;
     try {
       const formatted = JSON.stringify(JSON.parse(config), null, 2);
       setConfig(formatted);
-      saveMcpConfig(formatted);
+      configToSave = formatted;
     } catch {
       if (jsonError) return;
-      saveMcpConfig(config);
     }
+
+    // Save to localStorage
+    localStorage.setItem(MCP_CONFIG_KEY, configToSave);
+
+    // Sync to Hermes config.yaml
+    const result = await syncToHermes(configToSave);
+    if (result.success) {
+      setHermesSynced(`${result.serversWritten} servers → Hermes`);
+      setTimeout(() => setHermesSynced(null), 3000);
+    }
+
     setSaved(true);
     setJustSaved(true);
     setTimeout(() => setJustSaved(false), 2000);
@@ -712,6 +724,25 @@ function McpConfigEditor() {
             >
               unsaved changes
             </motion.span>
+          )}
+          {hermesSynced && (
+            <motion.span
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0 }}
+              className="text-[10px] px-2 py-0.5 rounded font-medium"
+              style={{ background: 'rgba(34,197,94,0.1)', color: 'var(--color-success)', fontFamily: 'var(--font-mono)' }}
+            >
+              ✓ {hermesSynced}
+            </motion.span>
+          )}
+          {hermesAvailable && !hermesSynced && saved && (
+            <span
+              className="text-[10px] px-2 py-0.5 rounded font-medium"
+              style={{ background: 'rgba(34,197,94,0.06)', color: 'var(--color-text-tertiary)', fontFamily: 'var(--font-mono)' }}
+            >
+              hermes linked
+            </span>
           )}
         </div>
         <div className="flex items-center gap-1.5">
