@@ -1,51 +1,66 @@
-import { useState } from "react";
-import reactLogo from "./assets/react.svg";
-import { invoke } from "@tauri-apps/api/core";
-import "./App.css";
+import { Shell } from "./components/layout/SentinelOverlay";
+import { IdeView, ModuleView } from "./components/views/MainStage";
+import { AgentChat } from "./components/views/AgentChat";
+import { SettingsModules } from "./components/views/SettingsModules";
+import { ApiKeysSettings } from "./components/views/ApiKeysSettings";
+import { MarketingDashboard } from "./components/views/MarketingDashboard";
+import { DraftEditor } from "./components/views/DraftEditor";
+import { MarketingCalendar } from "./components/views/MarketingCalendar";
+import { useLayoutStore } from "./stores/layoutStore";
 
-function App() {
-  const [greetMsg, setGreetMsg] = useState("");
-  const [name, setName] = useState("");
+const MODULE_CONFIG: Record<string, { title: string; subtitle: string }> = {
+  company: { title: 'Company OS', subtitle: 'Paperclip integration — departments, employees, task queues' },
+  agents: { title: 'Agent Fleet', subtitle: 'Multi-agent orchestration, persona profiles, execution traces' },
+  fleet: { title: 'System Dashboard', subtitle: 'Token usage, model routing, workspace health metrics' },
+};
 
-  async function greet() {
-    // Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
-    setGreetMsg(await invoke("greet", { name }));
+/**
+ * Resolves which main view to render based on the active tab
+ * and (for IDE tab) the active context view.
+ */
+function MainContent() {
+  const { activeTab, activeContextView } = useLayoutStore();
+
+  // IDE tab has sub-views
+  if (activeTab === 'ide') {
+    if (activeContextView === 'chat') {
+      return <AgentChat />;
+    }
+    return <IdeView />;
   }
 
+  // Settings tab has sub-views
+  if (activeTab === 'settings') {
+    if (activeContextView === 'keys' || activeContextView === 'mcp') {
+      return <ApiKeysSettings />;
+    }
+    return <SettingsModules />;
+  }
+
+  // Marketing tab — sub-view routing
+  if (activeTab === 'marketing') {
+    if (activeContextView === 'editor') {
+      return <DraftEditor />;
+    }
+    if (activeContextView === 'calendar') {
+      return <MarketingCalendar />;
+    }
+    return <MarketingDashboard />;
+  }
+
+  // All other tabs show their module placeholder
   return (
-    <main className="container">
-      <h1>Welcome to Tauri + React</h1>
-
-      <div className="row">
-        <a href="https://vite.dev" target="_blank">
-          <img src="/vite.svg" className="logo vite" alt="Vite logo" />
-        </a>
-        <a href="https://tauri.app" target="_blank">
-          <img src="/tauri.svg" className="logo tauri" alt="Tauri logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <p>Click on the Tauri, Vite, and React logos to learn more.</p>
-
-      <form
-        className="row"
-        onSubmit={(e) => {
-          e.preventDefault();
-          greet();
-        }}
-      >
-        <input
-          id="greet-input"
-          onChange={(e) => setName(e.currentTarget.value)}
-          placeholder="Enter a name..."
-        />
-        <button type="submit">Greet</button>
-      </form>
-      <p>{greetMsg}</p>
-    </main>
+    <ModuleView
+      title={MODULE_CONFIG[activeTab]?.title ?? 'Unknown'}
+      subtitle={MODULE_CONFIG[activeTab]?.subtitle ?? ''}
+    />
   );
 }
 
-export default App;
+export default function App() {
+  return (
+    <Shell>
+      <MainContent />
+    </Shell>
+  );
+}
