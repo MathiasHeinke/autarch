@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { 
   FolderTree, 
@@ -9,12 +9,16 @@ import {
   Server,
 } from 'lucide-react';
 import { useLayoutStore } from '../../stores/layoutStore';
+import { activePreset } from '../../presets';
+import type { ContextItem } from '../../presets';
 
 interface ContextPanelProps {
   activeTab: string;
 }
 
-const CONTEXT_ITEMS: Record<string, { icon: typeof FolderTree; label: string; id: string }[]> = {
+// ─── Core context items (always available) ──────────────────────
+
+const CORE_CONTEXT_ITEMS: Record<string, ContextItem[]> = {
   ide: [
     { icon: FolderTree, id: 'explorer', label: 'Explorer' },
     { icon: Search, id: 'search', label: 'Search' },
@@ -24,11 +28,6 @@ const CONTEXT_ITEMS: Record<string, { icon: typeof FolderTree; label: string; id
   company: [
     { icon: FolderTree, id: 'departments', label: 'Departments' },
     { icon: MessageSquare, id: 'tasks', label: 'Task Queue' },
-  ],
-  marketing: [
-    { icon: FolderTree, id: 'pipeline', label: 'Content Pipeline' },
-    { icon: Search, id: 'calendar', label: 'Calendar View' },
-    { icon: MessageSquare, id: 'editor', label: 'Draft Editor' },
   ],
   agents: [
     { icon: FolderTree, id: 'fleet', label: 'Agent Fleet' },
@@ -47,7 +46,16 @@ const CONTEXT_ITEMS: Record<string, { icon: typeof FolderTree; label: string; id
 };
 
 export function ContextPanel({ activeTab }: ContextPanelProps) {
-  const items = CONTEXT_ITEMS[activeTab] ?? [];
+  // Merge core + preset context items
+  const items = useMemo(() => {
+    // Check if a preset module provides context items for this tab
+    const presetModule = activePreset.modules.find(m => m.id === activeTab);
+    if (presetModule) {
+      return presetModule.contextItems;
+    }
+    return CORE_CONTEXT_ITEMS[activeTab] ?? [];
+  }, [activeTab]);
+
   const { activeContextView, setActiveContextView } = useLayoutStore();
 
   // Reset to first item when tab changes and current view isn't in the new tab

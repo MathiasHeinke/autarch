@@ -66,15 +66,42 @@ const ZED_PATHS_MACOS = [
  * - Source lives at ~/Developer/hermes-agent/
  * - The binary is actually a Python entrypoint via uv venv
  */
-const HERMES_SOURCE_DIR = '/Users/mathiasheinke/Developer/hermes-agent';
-const HERMES_CLONE_URL = 'https://github.com/ares-os/hermes-agent.git';
 
-const HERMES_PATHS = [
-  `${HERMES_SOURCE_DIR}/venv/bin/hermes`,  // venv entrypoint (primary)
-  '/Users/mathiasheinke/.local/bin/hermes', // symlink from setup script
-  '/usr/local/bin/hermes',
-  '/opt/homebrew/bin/hermes',
-];
+// ─── Dynamic Home Directory ─────────────────────────────────────
+
+let _cachedHome: string | null = null;
+
+async function getHomeDir(): Promise<string> {
+  if (_cachedHome) return _cachedHome;
+  try {
+    const { Command } = await import('@tauri-apps/plugin-shell');
+    const cmd = Command.create('sh', ['-c', 'echo $HOME']);
+    const result = await cmd.execute();
+    _cachedHome = result.stdout.trim() || '/tmp';
+  } catch {
+    _cachedHome = '/tmp';
+  }
+  return _cachedHome;
+}
+
+function getHermesSourceDir(home: string): string {
+  return `${home}/Developer/hermes-agent`;
+}
+
+function getHermesPaths(home: string): string[] {
+  const sourceDir = getHermesSourceDir(home);
+  return [
+    `${sourceDir}/venv/bin/hermes`,     // venv entrypoint (primary)
+    `${home}/.local/bin/hermes`,         // symlink from setup script
+    '/usr/local/bin/hermes',
+    '/opt/homebrew/bin/hermes',
+  ];
+}
+
+// Clone URL comes from active preset (configurable per deployment)
+import { activePreset } from '../presets';
+const getHermesCloneUrl = () => activePreset.hermesCloneUrl ?? 'https://github.com/ares-os/hermes-agent.git';
+
 
 // ─── Shell Execution Helper ─────────────────────────────────────
 
@@ -198,9 +225,12 @@ export async function detectZed(): Promise<ModuleInfo> {
  */
 export async function detectHermes(): Promise<ModuleInfo> {
   const base: ModuleInfo = { id: 'hermes', name: 'Hermes Agent', status: 'checking' };
+  const home = await getHomeDir();
+  const hermesPaths = getHermesPaths(home);
+  const hermesSourceDir = getHermesSourceDir(home);
 
   // Check known paths
-  for (const path of HERMES_PATHS) {
+  for (const path of hermesPaths) {
     if (await fileExists(path)) {
       // Get version: `hermes --version` or `hermes version`
       const vResult = await execCommand(path, ['--version']);
@@ -229,13 +259,13 @@ export async function detectHermes(): Promise<ModuleInfo> {
   }
 
   // Check if source exists but setup hasn't been run
-  if (await dirExists(HERMES_SOURCE_DIR)) {
-    const hasSetup = await fileExists(`${HERMES_SOURCE_DIR}/setup-hermes.sh`);
+  if (await dirExists(hermesSourceDir)) {
+    const hasSetup = await fileExists(`${hermesSourceDir}/setup-hermes.sh`);
     if (hasSetup) {
       return {
         ...base,
         status: 'not-installed',
-        path: HERMES_SOURCE_DIR,
+        path: hermesSourceDir,
         error: 'Source found but not set up. Run setup-hermes.sh.',
       };
     }
@@ -399,14 +429,19 @@ export async function installHermes(opts: InstallOptions = {}): Promise<ModuleIn
 
   opts.onProgress?.({ ...progress });
 
+  // Resolve dynamic paths
+  const home = await getHomeDir();
+  const hermesSourceDir = getHermesSourceDir(home);
+  const hermesCloneUrl = getHermesCloneUrl();
+
   // Step 1: Check if source directory exists
-  const sourceExists = await dirExists(HERMES_SOURCE_DIR);
+  const sourceExists = await dirExists(hermesSourceDir);
 
   if (!sourceExists) {
     // ── Clone the repository ────────────────────────────────
     progress.step = 'Cloning Hermes repository...';
     progress.percent = 5;
-    progress.output.push(`$ git clone ${HERMES_CLONE_URL} ${HERMES_SOURCE_DIR}`);
+    progress.output.push(`$ git clone ${hermesCloneUrl} ${hermesSourceDir}`);
     opts.onProgress?.({ ...progress });
 
     // Check git is available
@@ -419,8 +454,8 @@ export async function installHermes(opts: InstallOptions = {}): Promise<ModuleIn
 
     const cloneResult = await execCommand('git', [
       'clone', '--depth', '1',
-      HERMES_CLONE_URL,
-      HERMES_SOURCE_DIR,
+      hermesCloneUrl,
+      hermesSourceDir,
     ]);
 
     if (cloneResult.code !== 0) {
@@ -441,13 +476,13 @@ export async function installHermes(opts: InstallOptions = {}): Promise<ModuleIn
     opts.onProgress?.({ ...progress });
 
     await execCommand('git', [
-      '-C', HERMES_SOURCE_DIR,
+      '-C', hermesSourceDir,
       'submodule', 'update', '--init', '--recursive',
     ]);
   } else {
     progress.step = 'Source directory found!';
     progress.percent = 20;
-    progress.output.push(`✓ Source at ${HERMES_SOURCE_DIR}`);
+    progress.output.push(`✓ Source at ${hermesSourceDir}`);
     opts.onProgress?.({ ...progress });
   }
 
@@ -455,17 +490,17 @@ export async function installHermes(opts: InstallOptions = {}): Promise<ModuleIn
   // We pipe 'n' to skip the setup wizard prompt at the end
   progress.step = 'Running setup-hermes.sh...';
   progress.percent = 30;
-  progress.output.push(`$ cd ${HERMES_SOURCE_DIR} && echo 'n' | ./setup-hermes.sh`);
+  progress.output.push(`$ cd ${hermesSourceDir} && echo 'n' | ./setup-hermes.sh`);
   opts.onProgress?.({ ...progress });
 
   // Make setup script executable
-  await execCommand('chmod', ['+x', `${HERMES_SOURCE_DIR}/setup-hermes.sh`]);
+  await execCommand('chmod', ['+x', `${hermesSourceDir}/setup-hermes.sh`]);
 
   // Run the setup script non-interactively:
   // - Set HERMES_SETUP_NONINTERACTIVE to skip prompts  
   // - Pipe 'n' for the ripgrep and wizard prompts
   const setupResult = await execScript(
-    `cd "${HERMES_SOURCE_DIR}" && echo -e "n\\nn" | ./setup-hermes.sh 2>&1`,
+    `cd "${hermesSourceDir}" && echo -e "n\\nn" | ./setup-hermes.sh 2>&1`,
   );
 
   if (setupResult.code === 0) {
