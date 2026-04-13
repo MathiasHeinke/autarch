@@ -355,7 +355,7 @@ export async function forceReapplyKit(): Promise<ProvisionResult> {
 /**
  * Default remote manifest URL. Overridden by kit-manifest.json's remoteBaseUrl.
  */
-const DEFAULT_REMOTE_BASE_URL = 'https://raw.githubusercontent.com/ares-os/autarch/main/hermes-kit';
+const DEFAULT_REMOTE_BASE_URL = 'https://raw.githubusercontent.com/autarch/autarch/main/hermes-kit';
 
 /**
  * Check if a remote kit update is available (OTA).

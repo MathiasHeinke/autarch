@@ -3,10 +3,11 @@ import {
   TerminalSquare, 
   Building2, 
   Megaphone, 
-  Cpu, 
-  Activity, 
+  Cpu,
+  Activity,
   Settings,
   Zap,
+  Workflow
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useLayoutStore } from '../../stores/layoutStore';
@@ -25,9 +26,9 @@ const CORE_TABS_AFTER = [
   { id: 'settings', icon: Settings, label: 'Settings' },
 ];
 
-// Icon lookup for preset modules (keeps icons in one place)
 const MODULE_ICONS: Record<string, typeof Megaphone> = {
   marketing: Megaphone,
+  workflow: Workflow,
 };
 
 export function TopNav() {

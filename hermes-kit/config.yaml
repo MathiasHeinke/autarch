@@ -3,13 +3,50 @@
 # =============================================================================
 # This config turns Hermes into a multi-persona agentic powerhouse.
 # Copy to ~/.hermes/config.yaml (or $HERMES_HOME/config.yaml)
+#
+# 3-Tier LLM Cascading:
+# ┌─ Tier 1: Flash + Thinking ─── 90% Routine (chat, tools, analysis)
+# ├─ Tier 2: Pro (delegation) ─── 10% Deep Work (complex reasoning)
+# └─ Tier 3: Flash Lite (aux) ─── Background Tasks (memory, compression)
 # =============================================================================
 
 # --- Model Configuration ---
+# Uses native Gemini provider — set GEMINI_API_KEY or GOOGLE_API_KEY
 model:
-  provider: anthropic          # or: openai, google, ollama
-  model_name: claude-sonnet-4-20250514  # or: gpt-4o, gemini-2.5-pro
-  # For local: provider: ollama, model_name: llama3.1:70b
+  provider: gemini
+  default: gemini-3-flash-preview
+
+# --- Fallback Model ---
+fallback_model:
+  provider: gemini
+  model: gemini-2.0-flash
+
+# --- Delegation: Pro for Deep Work ---
+delegation:
+  provider: gemini
+  model: gemini-3.1-pro-preview
+  max_iterations: 50
+  default_toolsets: ["terminal", "file", "web"]
+
+# --- Auxiliary Task Routing ---
+auxiliary:
+  vision:
+    provider: gemini
+    model: gemini-3-flash-preview
+  compression:
+    provider: gemini
+    model: gemini-3.1-flash-lite-preview
+  web_extract:
+    provider: gemini
+    model: gemini-3.1-flash-lite-preview
+  flush_memories:
+    provider: gemini
+    model: gemini-3.1-flash-lite-preview
+
+# --- Context Compression ---
+compression:
+  summary_provider: gemini
+  summary_model: gemini-3.1-flash-lite-preview
 
 # --- Terminal Backend ---
 terminal:
@@ -21,7 +58,6 @@ skills:
   # External skill directories — Hermes scans these automatically
   external_dirs:
     - ~/.autarch/skills         # Autarch OS skill library
-    # Add your own project-specific skill dirs here
 
 # --- Agent Personalities ---
 # Switch via: /personality <name>

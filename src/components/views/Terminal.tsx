@@ -8,7 +8,9 @@ import { useTerminalStore } from '../../stores/terminalStore';
 export function Terminal() {
   const terminalRef = useRef<HTMLDivElement>(null);
 
-  const { setShellReady, setPtyWriteFn, handlePtyOutput } = useTerminalStore();
+  // We don't need the local destructuring of these properties anymore, 
+  // since handlePtyOutput is called inside terminalStore itself now, 
+  // and shellReady is checked internally.
 
   useEffect(() => {
     if (!terminalRef.current) return;
@@ -34,92 +36,55 @@ export function Terminal() {
     term.open(terminalRef.current);
     fitAddon.fit();
 
-    // ── PTY Spawn ──────────────────────────────────────────
-    let ptyProcess: Awaited<ReturnType<typeof import('tauri-pty')['spawn']>> | null = null;
+    async function initTerminal() {
+      if (cancelled) return;
+      
+      const {
+        initGlobalPty,
+        subscribeToPty,
+        getPtyBuffer,
+        resizeGlobalPty,
+      } = await import('../../stores/terminalStore');
 
-    async function initPty() {
-      try {
-        const { spawn } = await import('tauri-pty');
-        if (cancelled) return; // Guard: component already unmounted
+      // Setup global PTY if not started
+      await initGlobalPty();
+      if (cancelled) return;
 
-        // W-02 FIX: Use Tauri OS detection instead of unreliable navigator.userAgent
-        let shell = 'bash';
-        try {
-          const { platform } = await import('@tauri-apps/plugin-os');
-          if (cancelled) return;
-          shell = platform() === 'macos' ? 'zsh' : 'bash';
-        } catch {
-          // Fallback: if Tauri OS plugin unavailable, default to bash
-          shell = 'bash';
-        }
-
-        ptyProcess = spawn(shell, [], {
-          cols: term.cols,
-          rows: term.rows,
-        });
-
-        // PTY → xterm (shell output → screen)
-        // 🧩 Also feeds the reactive output parser for install phase detection
-        ptyProcess.onData((data: Uint8Array) => {
-          term.write(data);
-          // Feed the reactive output parser (debounced by nature of PTY chunks)
-          const text = new TextDecoder().decode(data);
-          handlePtyOutput(text);
-        });
-
-        // xterm → PTY (keyboard input → shell)
-        term.onData((data: string) => {
-          ptyProcess?.write(data);
-        });
-
-        // Resize sync: xterm → PTY
-        term.onResize(({ cols, rows }: { cols: number; rows: number }) => {
-          ptyProcess?.resize(cols, rows);
-        });
-
-        // W-01 FIX: Handle shell exit (user types 'exit' or shell crashes)
-        ptyProcess.onExit(({ exitCode }: { exitCode: number }) => {
-          term.writeln(`\r\n\x1b[1;33m⚠ Shell exited (code ${exitCode}).\x1b[0m`);
-          term.writeln('  Press any key to restart the shell.');
-          setShellReady(false);
-          setPtyWriteFn(null);
-
-          // Allow restart on any keypress
-          const restartDisposable = term.onKey(() => {
-            restartDisposable.dispose();
-            term.writeln('\x1b[1;36m↻ Restarting shell...\x1b[0m\r\n');
-            initPty();
-          });
-        });
-
-        // Register write function in the terminal store for command injection
-        setPtyWriteFn((data: string) => {
-          ptyProcess?.write(data);
-        });
-
-        if (cancelled) {
-          // Component unmounted during setup — kill the process we just spawned
-          try { ptyProcess.kill(); } catch { /* noop */ }
-          ptyProcess = null;
-          return;
-        }
-
-        setShellReady(true);
-
-        // Re-fit after PTY is initialized (content may shift)
-        requestAnimationFrame(() => fitAddon.fit());
-      } catch (err) {
-        if (cancelled) return;
-        // Graceful fallback: PTY not available (e.g. browser-only dev mode)
-        console.warn('[Terminal] PTY spawn failed, running in read-only mode:', err);
-        term.writeln('\x1b[1;33m⚠ PTY not available.\x1b[0m Running in display-only mode.');
-        term.writeln('  This terminal requires the Tauri desktop runtime.');
-        term.writeln('  Start with: npm run tauri dev');
-        setShellReady(false);
+      // Replay existing output buffer
+      for (const chunk of getPtyBuffer()) {
+        term.write(chunk);
       }
+
+      // Re-fit after replay
+      requestAnimationFrame(() => fitAddon.fit());
+
+      // Subscribe to live output
+      const unsubscribe = subscribeToPty((data) => {
+        term.write(data);
+      });
+
+      // Forward keyboard input to global PTY
+      term.onData((data) => {
+        const store = useTerminalStore.getState();
+        if (store.shellReady && store.ptyWriteFn) {
+          store.ptyWriteFn(data);
+        } else if (!store.shellReady) {
+          // Allow restart on keypress if shell exited
+          term.writeln('\x1b[1;36m↻ Restarting shell...\x1b[0m\r\n');
+          initGlobalPty();
+        }
+      });
+
+      // Synchronize resizes
+      term.onResize(({ cols, rows }) => {
+        resizeGlobalPty(cols, rows);
+      });
+
+      cleanupSub = unsubscribe;
     }
 
-    initPty();
+    let cleanupSub: (() => void) | null = null;
+    initTerminal();
 
     // ── Resize Handling ─────────────────────────────────────
     const handleResize = () => {
@@ -128,7 +93,6 @@ export function Terminal() {
 
     window.addEventListener('resize', handleResize);
 
-    // Observer handles dynamic resizing within react-resizable-panels
     const resizeObserver = new ResizeObserver(() => {
       requestAnimationFrame(() => {
         fitAddon.fit();
@@ -139,15 +103,10 @@ export function Terminal() {
 
     // ── Cleanup ──────────────────────────────────────────────
     return () => {
-      cancelled = true; // Signal async initPty to abort
+      cancelled = true;
       window.removeEventListener('resize', handleResize);
       resizeObserver.disconnect();
-      setPtyWriteFn(null);
-      setShellReady(false);
-
-      if (ptyProcess) {
-        try { ptyProcess.kill(); } catch { /* already dead */ }
-      }
+      if (cleanupSub) cleanupSub();
       term.dispose();
     };
   }, []); // eslint-disable-line react-hooks/exhaustive-deps

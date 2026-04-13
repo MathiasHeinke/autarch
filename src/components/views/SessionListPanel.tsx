@@ -4,9 +4,9 @@ import clsx from 'clsx';
 
 const MOCK_SESSIONS = [
   { id: 's1', name: 'Agentic Layout Optimization', workspace: 'Autarch', time: '10m ago', active: true },
-  { id: 's2', name: 'Debug Bio.X Convergence', workspace: 'ARES App', time: '2h ago', active: false },
-  { id: 's3', name: 'Implement Marketing Pipeline', workspace: 'Research Hub', time: '1d ago', active: false },
-  { id: 's4', name: 'Fix HealthKit Mutex', workspace: 'ARES App', time: '3d ago', active: false },
+  { id: 's2', name: 'Debug Bio.X Convergence', workspace: 'Autarch Core', time: '2h ago', active: false },
+  { id: 's3', name: 'Implement Marketing Pipeline', workspace: 'Vanilla Setup', time: '1d ago', active: false },
+  { id: 's4', name: 'Fix HealthKit Mutex', workspace: 'Autarch Core', time: '3d ago', active: false },
 ];
 
 export function SessionListPanel() {

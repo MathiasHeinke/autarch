@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { invoke } from '@tauri-apps/api/core';
 import { syncToHermes, syncApiKeysToEnv, isHermesConfigAvailable } from '../../services/hermesBridge';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -26,17 +27,33 @@ import {
 const STORAGE_PREFIX = 'autarch:apikeys:';
 const MCP_CONFIG_KEY = 'autarch:mcp-config';
 
-function loadKey(service: string): string {
+async function loadKey(service: string): Promise<string> {
   try {
-    return localStorage.getItem(`${STORAGE_PREFIX}${service}`) ?? '';
-  } catch { return ''; }
+    const val = await invoke<string>('get_keychain_secret', { service, account: 'autarch' });
+    return val || '';
+  } catch { 
+    // Fallback to old localStorage for seamless migration (optional but safe)
+    try {
+      const old = localStorage.getItem(`${STORAGE_PREFIX}${service}`);
+      if (old) {
+         saveKey(service, old); // Migrate it
+         localStorage.removeItem(`${STORAGE_PREFIX}${service}`);
+         return old;
+      }
+    } catch {}
+    return ''; 
+  }
 }
 
-function saveKey(service: string, value: string) {
-  if (value) {
-    localStorage.setItem(`${STORAGE_PREFIX}${service}`, value);
-  } else {
-    localStorage.removeItem(`${STORAGE_PREFIX}${service}`);
+async function saveKey(service: string, value: string) {
+  try {
+    if (value) {
+      await invoke('set_keychain_secret', { service, account: 'autarch', secret: value });
+    } else {
+      await invoke('set_keychain_secret', { service, account: 'autarch', secret: '' });
+    }
+  } catch (e) {
+    console.error('Failed to save to keychain', e);
   }
 }
 
@@ -149,24 +166,26 @@ function ServiceKeyCard({ service }: { service: ApiKeyService }) {
   const [justSaved, setJustSaved] = useState(false);
   const [hermesSynced, setHermesSynced] = useState<string | null>(null);
 
-  // Load from localStorage
+  // Load from OS Keychain
   useEffect(() => {
-    const loaded: Record<string, string> = {};
-    service.fields.forEach((f) => {
-      loaded[f.key] = loadKey(`${service.id}:${f.key}`);
-    });
-    setValues(loaded);
+    async function fetchKeys() {
+      const loaded: Record<string, string> = {};
+      for (const f of service.fields) {
+        loaded[f.key] = await loadKey(`${service.id}:${f.key}`);
+      }
+      setValues(loaded);
+    }
+    fetchKeys();
   }, [service]);
-
   const handleChange = (key: string, value: string) => {
     setValues((prev) => ({ ...prev, [key]: value }));
     setSaved(false);
   };
 
   const handleSave = async () => {
-    Object.entries(values).forEach(([key, val]) => {
-      saveKey(`${service.id}:${key}`, val);
-    });
+    for (const [key, val] of Object.entries(values)) {
+      await saveKey(`${service.id}:${key}`, val);
+    }
     setSaved(true);
     setJustSaved(true);
     setTimeout(() => setJustSaved(false), 2000);

@@ -1,21 +1,32 @@
+import { Suspense, lazy } from "react";
 import { Shell } from "./components/layout/SentinelOverlay";
-import { IdeView, ModuleView } from "./components/views/MainStage";
-import { AgentChat } from "./components/views/AgentChat";
-import { SettingsModules } from "./components/views/SettingsModules";
-import { ApiKeysSettings } from "./components/views/ApiKeysSettings";
-import { MemoryPanel } from "./components/views/MemoryPanel";
-import { SkillsBrowser } from "./components/views/SkillsBrowser";
-import { AgenticLayout } from "./components/layout/AgenticLayout";
-import { EditorLayout } from "./components/layout/EditorLayout";
+import { ModuleView } from "./components/views/MainStage";
 import { useLayoutStore } from "./stores/layoutStore";
 import { activePreset } from "./presets";
 
+// ── Dynamic Imports (Cypher SRE Bundle Splitting) ──
+const IdeView = lazy(() => import("./components/views/MainStage").then(m => ({ default: m.IdeView })));
+const AgentChat = lazy(() => import("./components/views/AgentChat").then(m => ({ default: m.AgentChat })));
+const SettingsModules = lazy(() => import("./components/views/SettingsModules").then(m => ({ default: m.SettingsModules })));
+const ApiKeysSettings = lazy(() => import("./components/views/ApiKeysSettings").then(m => ({ default: m.ApiKeysSettings })));
+const MemoryPanel = lazy(() => import("./components/views/MemoryPanel").then(m => ({ default: m.MemoryPanel })));
+const SkillsBrowser = lazy(() => import("./components/views/SkillsBrowser").then(m => ({ default: m.SkillsBrowser })));
+const AgenticLayout = lazy(() => import("./components/layout/AgenticLayout").then(m => ({ default: m.AgenticLayout })));
+const EditorLayout = lazy(() => import("./components/layout/EditorLayout").then(m => ({ default: m.EditorLayout })));
+
 // ─── Placeholder configs for core tabs without dedicated views ──
 const MODULE_CONFIG: Record<string, { title: string; subtitle: string }> = {
-  company: { title: 'Company OS', subtitle: 'Paperclip integration — departments, employees, task queues' },
   agents: { title: 'Agent Fleet', subtitle: 'Multi-agent orchestration, persona profiles, execution traces' },
   fleet: { title: 'System Dashboard', subtitle: 'Token usage, model routing, workspace health metrics' },
 };
+
+function LoadingFallback() {
+  return (
+    <div className="flex h-full w-full items-center justify-center">
+      <div className="h-8 w-8 animate-spin rounded-full border-2 border-white/10 border-t-white/60" />
+    </div>
+  );
+}
 
 /**
  * Resolves which main view to render based on the active tab
@@ -78,12 +89,18 @@ export default function App() {
   const { mode } = useLayoutStore();
 
   if (mode === 'agentic') {
-    return <AgenticLayout />;
+    return (
+      <Suspense fallback={<LoadingFallback />}>
+        <AgenticLayout />
+      </Suspense>
+    );
   }
 
   return (
     <Shell>
-      <MainContent />
+      <Suspense fallback={<LoadingFallback />}>
+        <MainContent />
+      </Suspense>
     </Shell>
   );
 }

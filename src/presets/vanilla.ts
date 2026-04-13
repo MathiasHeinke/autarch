@@ -11,11 +11,12 @@
  */
 
 import type { PresetConfig } from './types';
+import { workflowModule } from './modules/workflowModule';
 
 export const vanillaPreset: PresetConfig = {
   name: 'vanilla',
-  modules: [],
-  hermesCloneUrl: 'https://github.com/ares-os/hermes-agent.git',
+  modules: [workflowModule],
+  hermesCloneUrl: 'https://github.com/autarch/hermes-agent.git',
   branding: {
     appName: 'AUTARCH',
     footerLabel: 'autarch v0.1.0',

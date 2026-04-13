@@ -50,18 +50,31 @@ function FileTreeItem({ node, level = 0 }: { node: FileNode; level?: number }) {
 }
 
 export function FileExplorer() {
-  const fileTree = useEditorStore(state => state.fileTree);
+  const { fileTree, openWorkspace, workspaceRoot } = useEditorStore();
 
   return (
     <div className="flex flex-col h-full bg-[#0E0E11] border-r border-white/5 overflow-y-auto">
       <div className="p-3 border-b border-white/5 flex items-center justify-between sticky top-0 bg-[#0E0E11] z-10">
         <h3 className="text-xs font-semibold tracking-wider text-slate-400 uppercase">Explorer</h3>
       </div>
-      <div className="py-2">
-        {fileTree.map(node => (
-          <FileTreeItem key={node.path} node={node} />
-        ))}
-      </div>
+      
+      {!workspaceRoot ? (
+        <div className="p-4 flex flex-col gap-3">
+          <p className="text-xs text-slate-500 text-center">No workspace opened.</p>
+          <button 
+            onClick={openWorkspace}
+            className="w-full py-1.5 px-3 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 rounded-md text-xs font-semibold hover:bg-emerald-500/20 transition-colors"
+          >
+            Open Folder
+          </button>
+        </div>
+      ) : (
+        <div className="py-2">
+          {fileTree.map(node => (
+            <FileTreeItem key={node.path} node={node} />
+          ))}
+        </div>
+      )}
     </div>
   );
 }

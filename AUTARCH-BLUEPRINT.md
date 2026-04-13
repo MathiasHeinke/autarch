@@ -15,7 +15,6 @@ Eine native Desktop-App, die eine extrem performante Entwicklungsumgebung bereit
 - 🖥️ **IDE Core** (Monaco Editor + Native Terminal)
 - 🤖 **Hermes Agent Integration** (Vanilla Chat Interface + Tool Access)
 - 📈 **Marketing Funnel** (Newsletter + Social Automation)
-- 📎 **Paperclip** (Maximal als *Optionales Addon*, NICHT im Core!)
 
 Das Herzstück von Autarch ist die perfekte Integration des Hermes Agents. Der User installiert Hermes separat. Autarch stellt die IDE, das Terminal, speichert Workspaces und Chat-Sessions und macht **ALLES was Hermes kann in einer UI verfügbar**.
 
@@ -23,7 +22,7 @@ Das Herzstück von Autarch ist die perfekte Integration des Hermes Agents. Der U
 
 ## 🔑 Kern-Prinzipien
 
-1. **Vanilla Core.** Alles wird "Vanilla" gebaut. Keine Bloat-Abhängigkeiten. Paperclip hat im jetzigen Repo nichts verloren.
+1. **Vanilla Core.** Alles wird "Vanilla" gebaut. Keine Bloat-Abhängigkeiten.
 2. **Hermes am Steuer.** Hermes ist extern installiert. Autarch verbindet sich via ACP/stdio. Das muss absolut zuverlässig funktionieren!
 3. **Session & Workspace Persistence.** Chats, Workspaces und Terminal-States werden sauber lokal gespeichert.
 4. **IDE-agnostisch.** Editor-Adapter Pattern (Monaco → CodeMirror → etc.).
@@ -37,7 +36,7 @@ Das Herzstück von Autarch ist die perfekte Integration des Hermes Agents. Der U
 ┌─ AUTARCH (Tauri 2 + Rust Backend + React/Vite Frontend) ──────────┐
 │                                                                     │
 │  ┌─ TOP NAV ──────────────────────────────────────────────────────┐│
-│  │ [🖥️ IDE] [📈 Marketing] [📊 Dash] [⚙️ Options] [📎 Addons]      ││
+│  │ [🖥️ IDE] [📈 Marketing] [📊 Dash] [⚙️ Options]                 ││
 │  └────────────────────────────────────────────────────────────────┘│
 │                                                                     │
 │  ┌─ ACTIVE TAB CONTENT (z.B. IDE) ───────────────────────────────┐│
@@ -92,9 +91,7 @@ Das Herzstück von Autarch ist die perfekte Integration des Hermes Agents. Der U
 - LLM Keys via OS Keychain (keyring-rs)
 - Workspace Overview & Logs
 
-### 4. 📎 Paperclip (Addon)
 
-- **Strict Separation:** Nur als optionales Addon, wenn der User "AI Company Orchestration" explizit aktivieren will. **Nicht** Teil des Basis-Repos.
 
 ---
 
@@ -106,6 +103,7 @@ Das Herzstück von Autarch ist die perfekte Integration des Hermes Agents. Der U
 - **Zustand** — State Management (Workspaces, Sessions)
 - **Tailwind CSS v4** — Styling
 - **Framer Motion, Radix UI, Lucide React**
+- **Cypher SRE Bundle Splitting** — All major views are dynamically loaded (`React.lazy` + `Suspense`) to ensure sub-500kB LCP payloads.
 
 ### Backend (Tauri 2 + Rust)
 - **portable-pty** — Terminal PTY Backend
@@ -135,4 +133,4 @@ Das Herzstück von Autarch ist die perfekte Integration des Hermes Agents. Der U
 - Marketing Funnel Tab
 - Settings/Config Panel
 
-> **Ziel:** Erst wenn Monaco, Terminal, Workspaces und der Hermes-Chat **perfekt** laufen, wird an Erweiterungen (wie Marketing oder Paperclip-Addons) gedacht!
+> **Ziel:** Erst wenn Monaco, Terminal, Workspaces und der Hermes-Chat **perfekt** laufen, wird an Erweiterungen gedacht!

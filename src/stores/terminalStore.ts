@@ -65,6 +65,72 @@ const INSTALL_ERROR_PATTERNS = [
 
 // ── Store ────────────────────────────────────────────────────
 
+// Global PTY State (decoupled from React lifecycle)
+let globalPtyProcess: Awaited<ReturnType<typeof import('tauri-pty')['spawn']>> | null = null;
+let ptyBuffer: Uint8Array[] = [];
+const ptySubscribers = new Set<(data: Uint8Array) => void>();
+
+export async function initGlobalPty() {
+  if (globalPtyProcess) return;
+  const store = useTerminalStore.getState();
+
+  try {
+    const { spawn } = await import('tauri-pty');
+    let shell = 'bash';
+    try {
+      const { platform } = await import('@tauri-apps/plugin-os');
+      shell = platform() === 'macos' ? 'zsh' : 'bash';
+    } catch {
+      // Fallback: if Tauri OS plugin unavailable, default to bash
+      shell = 'bash';
+    }
+
+    globalPtyProcess = spawn(shell, [], { cols: 80, rows: 24 });
+    store.setPtyWriteFn((data: string) => globalPtyProcess?.write(data));
+
+    globalPtyProcess.onData((data: Uint8Array) => {
+      ptyBuffer.push(data);
+      // keep buffer somewhat bounded (approx lines, arbitrary max 1000 chunks)
+      if (ptyBuffer.length > 1000) ptyBuffer.shift();
+      
+      ptySubscribers.forEach(cb => cb(data));
+
+      // Feed the reactive output parser
+      const text = new TextDecoder().decode(data);
+      store.handlePtyOutput(text);
+    });
+
+    globalPtyProcess.onExit(({ exitCode }: { exitCode: number }) => {
+      globalPtyProcess = null;
+      store.setShellReady(false);
+      store.setPtyWriteFn(null);
+      const msg = new TextEncoder().encode(`\r\n\x1b[1;33m⚠ Shell exited (code ${exitCode}).\x1b[0m\r\n  Press any key to restart the shell.\r\n`);
+      ptyBuffer.push(msg);
+      ptySubscribers.forEach(cb => cb(msg));
+    });
+
+    store.setShellReady(true);
+  } catch (err) {
+    console.warn('[Terminal] PTY spawn failed, running in read-only mode:', err);
+    store.setShellReady(false);
+  }
+}
+
+export function subscribeToPty(cb: (data: Uint8Array) => void) {
+  ptySubscribers.add(cb);
+  return () => ptySubscribers.delete(cb);
+}
+
+export function getPtyBuffer() {
+  return ptyBuffer;
+}
+
+export function resizeGlobalPty(cols: number, rows: number) {
+  if (globalPtyProcess) {
+    globalPtyProcess.resize(cols, rows);
+  }
+}
+
 export const useTerminalStore = create<TerminalState>((set, get) => ({
   // ── Initial State ──
   shellReady: false,

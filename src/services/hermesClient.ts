@@ -176,6 +176,7 @@ export async function sendChat(
 export interface RunOptions {
   url?: string;
   assistant_id?: string;
+  model?: string;
 }
 
 /**
@@ -193,6 +194,7 @@ export async function startRun(
     body: JSON.stringify({
       input,
       assistant_id: options?.assistant_id ?? 'default',
+      model: options?.model,
     }),
   });
 

@@ -5,6 +5,8 @@
  * Defines discriminated unions for all possible run events.
  */
 
+import type { GateMode } from '../types/workflow.types';
+
 // ─── Event Typings ──────────────────────────────────────────────
 
 export type ToolStartedEvent = {
@@ -56,6 +58,56 @@ export type RunFailedEvent = {
   };
 };
 
+export type WorkflowStartedEvent = {
+  type: 'workflow.started';
+  payload: {
+    workflowId: string;
+  };
+};
+
+export type WorkflowCompletedEvent = {
+  type: 'workflow.completed';
+  payload: {
+    workflowId: string;
+    result: Record<string, string>;
+  };
+};
+
+export type WorkflowFailedEvent = {
+  type: 'workflow.failed';
+  payload: {
+    workflowId: string;
+    error: string;
+  };
+};
+
+export type NodeStartedEvent = {
+  type: 'node.started';
+  payload: {
+    workflowId: string;
+    nodeId: string;
+  };
+};
+
+export type NodeCompletedEvent = {
+  type: 'node.completed';
+  payload: {
+    workflowId: string;
+    nodeId: string;
+    result: string;
+  };
+};
+
+export type NodeSuspendedEvent = {
+  type: 'node.suspended';
+  payload: {
+    workflowId: string;
+    nodeId: string;
+    reason: string;
+    gateMode: GateMode;
+  };
+};
+
 // Discriminated Union
 export type HermesEvent =
   | ToolStartedEvent
@@ -63,7 +115,13 @@ export type HermesEvent =
   | MessageDeltaEvent
   | ReasoningAvailableEvent
   | RunCompletedEvent
-  | RunFailedEvent;
+  | RunFailedEvent
+  | WorkflowStartedEvent
+  | WorkflowCompletedEvent
+  | WorkflowFailedEvent
+  | NodeStartedEvent
+  | NodeCompletedEvent
+  | NodeSuspendedEvent;
 
 export type HermesEventType = HermesEvent['type'];
 
@@ -72,7 +130,8 @@ export type HermesEventType = HermesEvent['type'];
 type EventHandler<K extends HermesEventType> = (event: Extract<HermesEvent, { type: K }>) => void;
 
 class EventBus {
-  private listeners: Map<HermesEventType, Set<any>> = new Map();
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-function-type
+  private listeners: Map<HermesEventType, Set<Function>> = new Map();
 
   /**
    * Subscribe to specific events. Returns a cleanup function.

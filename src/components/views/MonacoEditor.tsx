@@ -4,11 +4,21 @@ import { X, Eye, Code } from 'lucide-react';
 import clsx from 'clsx';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-import { useState } from 'react';
+import { useState, useRef } from 'react';
+import { AgentInlineEditOverlay } from './AgentInlineEditOverlay';
 
 export function MonacoEditor() {
   const { activeFilePath, openFiles, fileContents, setActiveFile, closeFile, updateFileContent } = useEditorStore();
   const [markdownViewMode, setMarkdownViewMode] = useState<'source' | 'preview'>('preview');
+  
+  // Overlay State
+  const [editorInst, setEditorInst] = useState<any>(null);
+  const editorContainerRef = useRef<HTMLDivElement>(null);
+  const [overlayState, setOverlayState] = useState<{
+    position: { top: number; left: number };
+    selectedText: string;
+    range: any;
+  } | null>(null);
 
   if (!activeFilePath || openFiles.length === 0) {
     return (
@@ -21,8 +31,6 @@ export function MonacoEditor() {
     );
   }
 
-  // Get active file metadata if needed (e.g. language)
-  // For now just infer simple languages from extension
   const ext = activeFilePath.split('.').pop() || '';
   const language = {
     'ts': 'typescript',
@@ -32,6 +40,54 @@ export function MonacoEditor() {
     'json': 'json',
     'md': 'markdown',
   }[ext] || 'plaintext';
+
+  const handleEditorMount = (editor: any, monaco: any) => {
+    setEditorInst(editor);
+
+    // Register Cmd+K 
+    editor.addAction({
+      id: 'autarch-inline-edit',
+      label: 'Autarch: Inline Edit (Cmd+K)',
+      keybindings: [monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyK],
+      contextMenuGroupId: 'navigation',
+      contextMenuOrder: 1.5,
+      run: (ed: any) => {
+        const selection = ed.getSelection();
+        const model = ed.getModel();
+        if (!model) return;
+        const text = model.getValueInRange(selection) || '';
+        
+        const pos = ed.getScrolledVisiblePosition({ 
+          lineNumber: selection.endLineNumber, 
+          column: selection.endColumn 
+        });
+        
+        if (pos) {
+          setOverlayState({
+            position: { top: pos.top + 20, left: pos.left },
+            selectedText: text,
+            range: selection,
+          });
+        }
+      }
+    });
+
+    // Hide if user clicks elsewhere in the editor
+    editor.onMouseDown(() => {
+      setOverlayState(null);
+    });
+  };
+
+  const applyEdit = (newText: string) => {
+    if (editorInst && overlayState) {
+      editorInst.executeEdits('autarch-agent', [{
+        range: overlayState.range,
+        text: newText,
+        forceMoveMarkers: true,
+      }]);
+      setOverlayState(null);
+    }
+  };
 
   return (
     <div className="flex flex-col h-full w-full bg-[#1E1E1E]">
@@ -95,7 +151,7 @@ export function MonacoEditor() {
       </div>
 
       {/* Editor Content */}
-      <div className="flex-1 overflow-hidden relative pt-2">
+      <div ref={editorContainerRef} className="flex-1 overflow-hidden relative pt-2">
         {language === 'markdown' && markdownViewMode === 'preview' ? (
           <div className="h-full w-full overflow-y-auto px-12 py-8 bg-[#18181A]">
             <article className="prose prose-invert prose-emerald max-w-4xl mx-auto">
@@ -111,6 +167,7 @@ export function MonacoEditor() {
             theme="vs-dark"
             path={activeFilePath}
             value={fileContents[activeFilePath] || ''}
+            onMount={handleEditorMount}
             onChange={(val) => {
               if (val !== undefined) updateFileContent(activeFilePath, val);
             }}
@@ -126,6 +183,17 @@ export function MonacoEditor() {
               cursorSmoothCaretAnimation: "on",
               formatOnPaste: true,
             }}
+          />
+        )}
+
+        {overlayState && (
+          <AgentInlineEditOverlay
+            position={overlayState.position}
+            selectedText={overlayState.selectedText}
+            activeFilePath={activeFilePath}
+            onApply={applyEdit}
+            onCancel={() => setOverlayState(null)}
+            editorContainerRef={editorContainerRef}
           />
         )}
       </div>

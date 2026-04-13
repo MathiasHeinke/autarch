@@ -2,13 +2,16 @@ import { Panel, Group as PanelGroup, Separator as PanelResizeHandle } from 'reac
 import { motion } from 'framer-motion';
 import { Network } from 'lucide-react';
 import { useLayoutStore } from '../../stores/layoutStore';
+import { useExecutionPlanStore } from '../../stores/executionPlanStore';
 import { AgentChat } from '../views/AgentChat';
 import { SessionListPanel } from '../views/SessionListPanel';
 import { FileExplorer } from '../views/FileExplorer';
 import { Terminal } from '../views/Terminal';
+import { PhaseTracker } from '../views/PhaseTracker';
 
 export function AgenticLayout() {
   const { setMode, agenticPanelSizes, setAgenticPanelSizes } = useLayoutStore();
+  const { activePlan } = useExecutionPlanStore();
 
   return (
     <div className="flex flex-col h-screen w-screen overflow-hidden" style={{ background: 'var(--color-surface-base)' }}>
@@ -47,7 +50,7 @@ export function AgenticLayout() {
 
           <PanelResizeHandle className="w-1 bg-white/5 hover:bg-emerald-500/50 transition-colors cursor-col-resize active:bg-emerald-500" />
 
-          {/* Center Panel: Primary Conversation & Terminal */}
+          {/* Center Panel: Primary Conversation & Phase Tracker */}
           <Panel 
             id="center-area"
             defaultSize={agenticPanelSizes['chat'] ?? 60} 
@@ -55,7 +58,19 @@ export function AgenticLayout() {
           >
             <PanelGroup orientation="vertical">
               <Panel id="chat" defaultSize={70} minSize={30}>
-                <AgentChat />
+                {activePlan ? (
+                  <PanelGroup orientation="horizontal">
+                    <Panel id="chat-inner" defaultSize={40} minSize={30}>
+                      <AgentChat />
+                    </Panel>
+                    <PanelResizeHandle className="w-1 bg-white/5 hover:bg-emerald-500/50 transition-colors cursor-col-resize active:bg-emerald-500" />
+                    <Panel id="phase-tracker" defaultSize={60} minSize={30}>
+                      <PhaseTracker />
+                    </Panel>
+                  </PanelGroup>
+                ) : (
+                  <AgentChat />
+                )}
               </Panel>
               
               <PanelResizeHandle className="h-1 bg-white/5 hover:bg-emerald-500/50 transition-colors cursor-row-resize active:bg-emerald-500" />

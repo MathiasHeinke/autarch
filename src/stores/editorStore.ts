@@ -1,5 +1,6 @@
 import { create } from 'zustand';
-
+import { readDir, readTextFile, writeTextFile } from '@tauri-apps/plugin-fs';
+import { open } from '@tauri-apps/plugin-dialog';
 export interface FileNode {
   name: string;
   path: string;
@@ -9,54 +10,89 @@ export interface FileNode {
 }
 
 interface EditorState {
+  workspaceRoot: string | null;
   fileTree: FileNode[];
   activeFilePath: string | null;
   openFiles: string[];
   fileContents: Record<string, string>;
   
+  openWorkspace: () => Promise<void>;
+  refreshWorkspace: () => Promise<void>;
   setActiveFile: (path: string) => void;
-  openFile: (path: string) => void;
+  openFile: (path: string) => Promise<void>;
   closeFile: (path: string) => void;
   updateFileContent: (path: string, content: string) => void;
+  saveFile: (path: string) => Promise<void>;
 }
 
-export const useEditorStore = create<EditorState>((set) => ({
-  fileTree: [
-    {
-      name: 'src',
-      path: '/src',
-      type: 'directory',
-      children: [
-        { name: 'App.tsx', path: '/src/App.tsx', type: 'file', language: 'typescript' },
-        { name: 'main.tsx', path: '/src/main.tsx', type: 'file', language: 'typescript' },
-        { 
-          name: 'components', 
-          path: '/src/components', 
-          type: 'directory',
-          children: [
-            { name: 'Button.tsx', path: '/src/components/Button.tsx', type: 'file', language: 'typescript' }
-          ]
+async function buildFileTree(path: string, name: string): Promise<FileNode> {
+  try {
+    const entries = await readDir(path);
+    const children: FileNode[] = [];
+    
+    for (const entry of entries) {
+      if (entry.name && !entry.name.startsWith('.') && entry.name !== 'node_modules' && entry.name !== 'target') {
+        const fullPath = `${path}/${entry.name}`;
+        if (entry.isDirectory) {
+          children.push(await buildFileTree(fullPath, entry.name));
+        } else {
+          children.push({ name: entry.name, path: fullPath, type: 'file' });
         }
-      ]
-    },
-    { name: 'package.json', path: '/package.json', type: 'file', language: 'json' },
-    { name: 'README.md', path: '/README.md', type: 'file', language: 'markdown' }
-  ],
-  activeFilePath: '/src/App.tsx',
-  openFiles: ['/src/App.tsx'],
-  fileContents: {
-    '/src/App.tsx': 'export default function App() {\n  return <div>Hello Autarch</div>;\n}',
-    '/src/main.tsx': 'import { createRoot } from "react-dom/client";\nimport App from "./App";\n\ncreateRoot(document.getElementById("root")).render(<App />);',
-    '/src/components/Button.tsx': 'export function Button({ children }) {\n  return <button className="btn">{children}</button>;\n}',
-    '/package.json': '{\n  "name": "autarch",\n  "version": "1.0.0"\n}',
-    '/README.md': '# Autarch OS\n\nThe intelligent IDE for agentic engineering.'
+      }
+    }
+    
+    return { name, path, type: 'directory', children: children.sort((a, b) => {
+      if (a.type === b.type) return a.name.localeCompare(b.name);
+      return a.type === 'directory' ? -1 : 1;
+    }) };
+  } catch (err) {
+    console.error('Failed to read directory:', err);
+    return { name, path, type: 'directory', children: [] };
+  }
+}
+
+export const useEditorStore = create<EditorState>((set, get) => ({
+  workspaceRoot: null,
+  fileTree: [],
+  activeFilePath: null,
+  openFiles: [],
+  fileContents: {},
+
+  openWorkspace: async () => {
+    const selected = await open({ directory: true, multiple: false });
+    if (selected && typeof selected === 'string') {
+      set({ workspaceRoot: selected, fileTree: [], openFiles: [], activeFilePath: null, fileContents: {} });
+      await get().refreshWorkspace();
+    }
+  },
+
+  refreshWorkspace: async () => {
+    const root = get().workspaceRoot;
+    if (!root) return;
+    const folderName = root.split('/').pop() || 'Workspace';
+    const rootNode = await buildFileTree(root, folderName);
+    set({ fileTree: rootNode.children || [] });
   },
 
   setActiveFile: (path) => set({ activeFilePath: path }),
-  openFile: (path) => set((state) => ({
-    openFiles: state.openFiles.includes(path) ? state.openFiles : [...state.openFiles, path],
-    activeFilePath: path,
-  })),
+  
+  openFile: async (path) => {
+    const state = get();
+    if (!state.fileContents[path]) {
+      try {
+        const content = await readTextFile(path);
+        set((s) => ({ fileContents: { ...s.fileContents, [path]: content } }));
+      } catch (err) {
+        console.error('Failed to read file:', err);
+        return;
+      }
+    }
+    
+    set((s) => ({
+      openFiles: s.openFiles.includes(path) ? s.openFiles : [...s.openFiles, path],
+      activeFilePath: path,
+    }));
+  },
   closeFile: (path) => set((state) => {
     const newOpenFiles = state.openFiles.filter(f => f !== path);
     return {
@@ -66,5 +102,16 @@ export const useEditorStore = create<EditorState>((set) => ({
   }),
   updateFileContent: (path, content) => set((state) => ({
     fileContents: { ...state.fileContents, [path]: content }
-  }))
+  })),
+  
+  saveFile: async (path) => {
+    const content = get().fileContents[path];
+    if (content !== undefined) {
+      try {
+        await writeTextFile(path, content);
+      } catch (err) {
+        console.error('Failed to save file:', err);
+      }
+    }
+  }
 }));

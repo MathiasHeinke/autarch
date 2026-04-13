@@ -7,7 +7,7 @@
  * This is the ONLY file that needs to change for a preset switch.
  */
 
-import { aresPreset } from './ares';
+import { vanillaPreset } from './vanilla';
 export type { PresetConfig, ModuleDefinition, ContextItem, TabDefinition } from './types';
 
-export const activePreset = aresPreset;
+export const activePreset = vanillaPreset;

@@ -1,8 +1,9 @@
 import { ChevronDown, Cpu } from 'lucide-react';
 import { useState, useRef, useEffect } from 'react';
 import clsx from 'clsx';
+import { useHermesStore } from '../../stores/hermesStore';
 
-const MODELS = [
+export const MODELS = [
   { id: 'claude-3-5-sonnet-20241022', name: 'Claude 3.5 Sonnet', provider: 'Anthropic', fast: true },
   { id: 'claude-3-opus', name: 'Claude 3 Opus', provider: 'Anthropic', fast: false },
   { id: 'gpt-4o', name: 'GPT-4o', provider: 'OpenAI', fast: true },
@@ -15,7 +16,8 @@ interface ModelSwitcherProps {
 
 export function ModelSwitcher({ className }: ModelSwitcherProps) {
   const [open, setOpen] = useState(false);
-  const [active, setActive] = useState(MODELS[0]);
+  const { activeModel, setActiveModel } = useHermesStore();
+  const active = MODELS.find(m => m.id === activeModel) || MODELS[0];
   const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -44,7 +46,7 @@ export function ModelSwitcher({ className }: ModelSwitcherProps) {
           {MODELS.map(m => (
             <button 
               key={m.id}
-              onClick={() => { setActive(m); setOpen(false); }}
+              onClick={() => { setActiveModel(m.id); setOpen(false); }}
               className={clsx(
                 "w-full text-left px-3 py-2 flex flex-col gap-1 hover:bg-white/5 transition-colors",
                 m.id === active.id && "bg-white/5"
