@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { syncToHermes, isHermesConfigAvailable } from '../../services/hermesBridge';
+import { syncToHermes, syncApiKeysToEnv, isHermesConfigAvailable } from '../../services/hermesBridge';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Key,
@@ -147,6 +147,7 @@ function ServiceKeyCard({ service }: { service: ApiKeyService }) {
   const [visibility, setVisibility] = useState<Record<string, boolean>>({});
   const [saved, setSaved] = useState(true);
   const [justSaved, setJustSaved] = useState(false);
+  const [hermesSynced, setHermesSynced] = useState<string | null>(null);
 
   // Load from localStorage
   useEffect(() => {
@@ -162,13 +163,30 @@ function ServiceKeyCard({ service }: { service: ApiKeyService }) {
     setSaved(false);
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     Object.entries(values).forEach(([key, val]) => {
       saveKey(`${service.id}:${key}`, val);
     });
     setSaved(true);
     setJustSaved(true);
     setTimeout(() => setJustSaved(false), 2000);
+
+    // Sync to ~/.hermes/.env — map service fields to env key names
+    const envKeys: Record<string, string> = {};
+    for (const [fieldKey, fieldValue] of Object.entries(values)) {
+      // Build env key: e.g. supabase:url → SUPABASE_URL
+      const envKey = `${service.id}_${fieldKey}`.toUpperCase().replace(/-/g, '_');
+      envKeys[envKey] = fieldValue;
+    }
+    try {
+      const result = await syncApiKeysToEnv(envKeys);
+      if (result.success) {
+        setHermesSynced(`${result.serversWritten} keys → .env`);
+        setTimeout(() => setHermesSynced(null), 3000);
+      }
+    } catch {
+      // Silently fail — .env sync is secondary to localStorage
+    }
   };
 
   const handleClear = () => {
@@ -278,6 +296,24 @@ function ServiceKeyCard({ service }: { service: ApiKeyService }) {
           {justSaved ? <CheckCircle2 className="w-3 h-3" /> : <Save className="w-3 h-3" />}
           {justSaved ? 'Saved!' : saved ? 'Saved' : 'Save'}
         </motion.button>
+        <AnimatePresence>
+          {hermesSynced && (
+            <motion.span
+              initial={{ opacity: 0, x: -8 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -8 }}
+              className="text-[10px] px-2 py-0.5 rounded font-medium"
+              style={{
+                background: 'rgba(16,185,129,0.08)',
+                color: 'var(--color-success)',
+                border: '1px solid rgba(16,185,129,0.15)',
+                fontFamily: 'var(--font-mono)',
+              }}
+            >
+              ✓ {hermesSynced}
+            </motion.span>
+          )}
+        </AnimatePresence>
         {hasAnyValue && (
           <motion.button
             onClick={handleClear}

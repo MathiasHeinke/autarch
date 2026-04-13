@@ -393,3 +393,164 @@ export async function isHermesConfigAvailable(): Promise<boolean> {
   const result = await execShell('test', ['-f', `${home}/.hermes/config.yaml`]);
   return result.code === 0;
 }
+
+// ─── API Keys → .env Bridge ────────────────────────────────────
+
+/** Keys that Autarch manages in ~/.hermes/.env */
+const MANAGED_ENV_KEYS = [
+  'SUPABASE_URL',
+  'SUPABASE_SERVICE_ROLE_KEY',
+  'OPENROUTER_API_KEY',
+  'GEMINI_API_KEY',
+  'GITHUB_PERSONAL_ACCESS_TOKEN',
+] as const;
+
+/**
+ * Read existing .env file as key-value pairs.
+ * Handles comments, empty lines, and quoted values.
+ */
+function parseEnvFile(content: string): Record<string, string> {
+  const result: Record<string, string> = {};
+  for (const line of content.split('\n')) {
+    const trimmed = line.trim();
+    if (!trimmed || trimmed.startsWith('#')) continue;
+    const eqIdx = trimmed.indexOf('=');
+    if (eqIdx < 0) continue;
+    const key = trimmed.slice(0, eqIdx).trim();
+    let value = trimmed.slice(eqIdx + 1).trim();
+    // Strip surrounding quotes
+    if ((value.startsWith('"') && value.endsWith('"')) ||
+        (value.startsWith("'") && value.endsWith("'"))) {
+      value = value.slice(1, -1);
+    }
+    result[key] = value;
+  }
+  return result;
+}
+
+/**
+ * Serialize key-value pairs back to .env format.
+ * Preserves ordering: existing keys first, new keys appended.
+ */
+function serializeEnvFile(
+  existing: Record<string, string>,
+  updates: Record<string, string>,
+  originalContent: string
+): string {
+  const lines: string[] = [];
+  const written = new Set<string>();
+
+  // Preserve original ordering and comments
+  for (const line of originalContent.split('\n')) {
+    const trimmed = line.trim();
+    if (!trimmed || trimmed.startsWith('#')) {
+      lines.push(line);
+      continue;
+    }
+    const eqIdx = trimmed.indexOf('=');
+    if (eqIdx < 0) {
+      lines.push(line);
+      continue;
+    }
+    const key = trimmed.slice(0, eqIdx).trim();
+    // Use updated value if available, otherwise keep existing
+    const value = key in updates ? updates[key] : existing[key];
+    if (value !== undefined) {
+      lines.push(`${key}="${value}"`);
+      written.add(key);
+    }
+  }
+
+  // Append new keys that weren't in the original file
+  for (const [key, value] of Object.entries(updates)) {
+    if (!written.has(key) && value) {
+      lines.push(`${key}="${value}"`);
+    }
+  }
+
+  // Ensure trailing newline
+  const result = lines.join('\n');
+  return result.endsWith('\n') ? result : result + '\n';
+}
+
+/**
+ * Sync API keys from Autarch UI to ~/.hermes/.env
+ *
+ * Strategy: Non-destructive patching.
+ * - Reads existing .env (preserves ALL keys Autarch doesn't manage)
+ * - Only updates keys in MANAGED_ENV_KEYS
+ * - Atomic write via temp file + mv
+ * - Sets chmod 600 for security
+ *
+ * @param keys - Record of key names to values (only managed keys are written)
+ */
+export async function syncApiKeysToEnv(
+  keys: Record<string, string>
+): Promise<SyncResult> {
+  const home = await getHomeDir();
+  const hermesHome = `${home}/.hermes`;
+  const envPath = `${hermesHome}/.env`;
+
+  try {
+    // Filter to only managed keys
+    const managedUpdates: Record<string, string> = {};
+    let keyCount = 0;
+    for (const [key, value] of Object.entries(keys)) {
+      if ((MANAGED_ENV_KEYS as readonly string[]).includes(key)) {
+        managedUpdates[key] = value;
+        if (value) keyCount++;
+      }
+    }
+
+    // Read existing .env (may not exist yet)
+    const existingResult = await execShell('cat', [envPath]);
+    const existingContent = existingResult.code === 0 ? existingResult.stdout : '';
+    const existingParsed = parseEnvFile(existingContent);
+
+    // Merge: existing + updates
+    const newContent = serializeEnvFile(existingParsed, managedUpdates, existingContent || '# Hermes Agent Environment\n# Managed by Autarch\n');
+
+    // Atomic write: temp file → mv
+    const tmpPath = `${hermesHome}/.env.tmp`;
+    const b64 = btoa(unescape(encodeURIComponent(newContent)));
+    const writeResult = await execShell('sh', [
+      '-c',
+      `echo '${b64}' | base64 -d > "${tmpPath}" && mv "${tmpPath}" "${envPath}" && chmod 600 "${envPath}"`,
+    ]);
+
+    if (writeResult.code === 0) {
+      console.log(`[HermesBridge] Synced ${keyCount} API keys to .env`);
+      return { success: true, configPath: envPath, serversWritten: keyCount };
+    }
+
+    return {
+      success: false,
+      configPath: envPath,
+      serversWritten: 0,
+      error: `Write failed: ${writeResult.stderr}`,
+    };
+  } catch (e) {
+    const error = e instanceof Error ? e.message : 'Unknown error';
+    return { success: false, configPath: envPath, serversWritten: 0, error };
+  }
+}
+
+/**
+ * Read API keys from ~/.hermes/.env for initial UI population.
+ * Returns only MANAGED_ENV_KEYS — never exposes unknown keys.
+ */
+export async function readApiKeysFromEnv(): Promise<Record<string, string> | null> {
+  const home = await getHomeDir();
+  const envPath = `${home}/.hermes/.env`;
+  const result = await execShell('cat', [envPath]);
+  if (result.code !== 0) return null;
+
+  const parsed = parseEnvFile(result.stdout);
+  const managed: Record<string, string> = {};
+  for (const key of MANAGED_ENV_KEYS) {
+    if (parsed[key]) {
+      managed[key] = parsed[key];
+    }
+  }
+  return managed;
+}
