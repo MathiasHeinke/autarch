@@ -1,4 +1,4 @@
-# Copy Rules — [PROJEKT]
+# Copy Rules — Autarch
 
 > **Diese Datei wird beim ersten Setup durch `/init` befüllt.**
 > Alle Personas die UI-Text schreiben MÜSSEN diese Regeln befolgen.
@@ -7,42 +7,41 @@
 
 ## Tone of Voice
 
-**[Beschreibe deinen Tone of Voice hier]**
+**Tone: Machiavellian, Professional, Direct, Lead Architect level**
 
-Beispiel-Skala (wähle eine Position):
+Das ist kein verspieltes Startup-Tool, sondern eine "Kommandozentrale". Die Sprache soll Macht, Effizienz und extreme Kontrolle ausstrahlen.
+
+Beispiel-Skala:
 
 ```
-Klinisch  ←─────────────────────────→  Emotional
-Formell   ←─────────────────────────→  Casual
-Komplex   ←─────────────────────────→  Einfach
-Distanziert ←───────────────────────→  Persönlich
+Klinisch  ←─●───────────────────────→  Emotional
+Formell   ←──●──────────────────────→  Casual
+Komplex   ←──────●──────────────────→  Einfach
+Distanziert ←─●─────────────────────→  Persönlich
 ```
 
 ---
 
 ## Verbotene Begriffe
 
-> [Falls es regulatorische oder brand-spezifische Begriffe gibt die NICHT verwendet werden dürfen]
-
 | ❌ Verboten | ✅ Stattdessen | Grund |
 |---|---|---|
-| [Begriff 1] | [Alternative] | [Warum] |
-| [Begriff 2] | [Alternative] | [Warum] |
-
-_Falls keine verbotenen Begriffe: Diese Sektion löschen._
+| "Oops! Something went wrong" | "Systemfehler. Bitte Protokolle prüfen." | Keine kindliche Sprache für Entwickler. |
+| "Magic" / "Magical" | "Automatisierte Orchestrierung" | Autarch ist Ingenieurskunst, keine Magie. |
+| "Awesome" / "Cool" | "Optimal" / "Effizient" | Fokus auf Leistung, nicht auf Hype. |
 
 ---
 
 ## Wording-Leitlinien
 
 ### Do's ✅
-- [Beispiel: Kurze Sätze. Max 15 Wörter.]
-- [Beispiel: Aktiv statt Passiv.]
-- [Beispiel: User direkt ansprechen.]
+- Kurze, präzise, fast schon militärisch anmutende Anweisungen.
+- Aktiv und bestimmend.
+- Autoritätsschaffende Begriffe ("Initialize", "Orchestrate", "Execute", "Verify").
 
 ### Don'ts ❌
-- [Beispiel: Keine Fachbegriffe ohne Erklärung.]
-- [Beispiel: Keine doppelten Verneinungen.]
+- Keine Entschuldigungen in Fehlermeldungen (Kein "Sorry!").
+- Keine Emojis im Fließtext der UI, außer als funktionale Icons in Menüs.
 
 ---
 
@@ -50,20 +49,20 @@ _Falls keine verbotenen Begriffe: Diese Sektion löschen._
 
 ### Buttons
 ```
-Primary:   [Verb] + [Objekt]  → "Plan erstellen"
-Secondary: [Substantiv]       → "Zurück"
-Danger:    [Konsequenz]        → "Endgültig löschen"
+Primary:   [Verb] + [Parameter]  → "Deploy Model", "Execute Task"
+Secondary: [Substantiv/Aktion]   → "Config", "Abort"
+Danger:    [Imperativ]           → "Terminate Process", "Purge Data"
 ```
 
 ### Fehlermeldungen
 ```
-Was passiert ist + Was der User tun kann.
-→ "Verbindung fehlgeschlagen. Prüfe deine Internetverbindung."
-NICHT: "Error 500" oder "Something went wrong"
+Fehlerursache + Anweisung zur Korrektur.
+→ "Connection refused at tcp://localhost:3100. Verify Paperclip daemon status."
+NICHT: "Wir konnten uns leider nicht verbinden."
 ```
 
 ### Leer-Zustände
 ```
-Freundlich + Handlungsaufforderung.
-→ "Noch keine Einträge. Starte mit deinem ersten [Objekt]."
+Direkte Aufforderung zum Handeln.
+→ "No active entities. Provision an agent to begin."
 ```
