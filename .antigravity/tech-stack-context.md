@@ -1,32 +1,48 @@
 # Tech Stack Context — Autarch
 
+> Letzte Aktualisierung: 2026-04-13
+
 ## Overview
-Autarch is the ultimate agentic shell — a native desktop application combining an IDE, Terminal, Marketing Funnel, and complete Hermes Agent Integration via a vanilla core.
+Autarch is a native desktop IDE (Tauri v2 + React 19) for agentic development. It provides a visual workflow builder, integrated terminal, code editor, and full Hermes Agent interface — all running offline-first on macOS/Linux/Windows.
 
 ## Frontend
-- **Framework:** React 19
-- **Build Tool:** Vite
+- **Framework:** React 19 + TypeScript 5.8 (strict mode)
+- **Build Tool:** Vite 7
 - **Routing:** react-router-dom v7
 - **Styling:** Tailwind CSS v4 + Tailwind Typography
-- **State Management:** Zustand (Chat Sessions, Workspace State)
-- **Editor Engine:** Monaco Editor (`@monaco-editor/react`)
-- **Terminal:** xterm.js (`@xterm/xterm`, `@xterm/addon-fit`)
+- **State Management:** Zustand 5 (7 stores: hermes, editor, workflow, terminal, layout, module, executionPlan)
+- **Editor Engine:** Monaco Editor (`@monaco-editor/react` v4.7)
+- **Terminal:** xterm.js v6 (`@xterm/xterm`, `@xterm/addon-fit`)
+- **Workflow Canvas:** React Flow (`@xyflow/react` v12)
 - **Drag & Drop:** `@dnd-kit/core`, `@dnd-kit/sortable`
-- **Animations:** Framer Motion
+- **Animations:** Framer Motion v12
 - **Icons:** Lucide React
+- **Markdown:** react-markdown + remark-gfm
 
 ## Backend / Desktop Environment
 - **Framework:** Tauri v2 (Rust)
 - **PTY Management:** `tauri-pty` / `portable-pty`
-- **Plugins:** `@tauri-apps/plugin-shell`, `@tauri-apps/plugin-os`
+- **Plugins:** `plugin-shell`, `plugin-os`, `plugin-dialog`, `plugin-fs`, `plugin-opener`
+- **Security:** `keyring-rs` → OS Keychain (macOS Keychain, Windows Credential Manager, Linux Secret Service)
 
 ## Integrations & Services
-- **Agent:** Hermes Agent (standalone CLI utility). Autarch acts as the interface to Hermes handling bridging over stdio/ACP.
-- **Data Persistence:** Local settings, JSON, or LocalStorage for caching workspaces and session context.
-- **Marketing:** Optional connections to Supabase for the marketing funnel.
-- **Addon (Optional):** Paperclip (Not part of the vanilla core).
+- **Agent:** Hermes Agent (standalone CLI). Autarch bridges via stdio/ACP subprocess.
+- **Data Persistence:** 
+  - Workflows: `~/.autarch/workflows/*.json` (Tauri plugin-fs)
+  - Chat Sessions: localStorage (Zustand persist)
+  - API Keys: OS Keychain (keyring-rs via Tauri IPC)
+  - Workspace state: Local JSON
+- **Supabase:** Optional (Marketing pipeline connection). `@supabase/supabase-js` v2.103
+
+## Workflow Engine
+- **Canvas:** React Flow with 3 custom node types (Trigger, Agent, Output)
+- **Gate System:** auto (pass-through), human (suspend + resume), agent-review (LLM criteria check)
+- **Execution:** Topological sorting (Kahn's algorithm) + Hermes persona execution
+- **Event Bus:** Type-safe discriminated union with 6 lifecycle events
+- **Reactive Bridge:** `useWorkflowExecution` hook → subscriptions → Zustand → node status rings
 
 ## Data Flow
-1. **Desktop Native APIs:** Tauri bridging handles interactions with the OS (file system, process execution for terminal/PTY).
-2. **Editor & Terminal:** React wraps Monaco and xterm.js components.
-3. **Hermes Integration:** The user must explicitly have Hermes installed. Tauri runs the Hermes subprocess and bridges stdout/stdin. Autarch reads everything Hermes is capable of interpreting and visually represents tools, chat history, and diffs.
+1. **Desktop Native APIs:** Tauri IPC handles file system, process spawning, keychain access
+2. **Editor & Terminal:** React wraps Monaco and xterm.js components
+3. **Hermes Integration:** Tauri spawns Hermes subprocess, bridges stdout/stdin
+4. **Workflow Execution:** Canvas → Store → hermesBridge.executeWorkflow() → EventBus → Store → Canvas re-render
