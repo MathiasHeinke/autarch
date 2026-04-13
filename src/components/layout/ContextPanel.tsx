@@ -7,6 +7,8 @@ import {
   Search,
   Key,
   Server,
+  Database,
+  Wrench,
 } from 'lucide-react';
 import { useLayoutStore } from '../../stores/layoutStore';
 import { activePreset } from '../../presets';
@@ -32,6 +34,8 @@ const CORE_CONTEXT_ITEMS: Record<string, ContextItem[]> = {
   agents: [
     { icon: FolderTree, id: 'fleet', label: 'Agent Fleet' },
     { icon: MessageSquare, id: 'logs', label: 'Execution Logs' },
+    { icon: Database, id: 'memory', label: 'Memory Bank' },
+    { icon: Wrench, id: 'skills', label: 'Skills Registry' },
   ],
   fleet: [
     { icon: FolderTree, id: 'metrics', label: 'System Metrics' },

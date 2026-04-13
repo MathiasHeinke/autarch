@@ -3,6 +3,10 @@ import { IdeView, ModuleView } from "./components/views/MainStage";
 import { AgentChat } from "./components/views/AgentChat";
 import { SettingsModules } from "./components/views/SettingsModules";
 import { ApiKeysSettings } from "./components/views/ApiKeysSettings";
+import { MemoryPanel } from "./components/views/MemoryPanel";
+import { SkillsBrowser } from "./components/views/SkillsBrowser";
+import { AgenticLayout } from "./components/layout/AgenticLayout";
+import { EditorLayout } from "./components/layout/EditorLayout";
 import { useLayoutStore } from "./stores/layoutStore";
 import { activePreset } from "./presets";
 
@@ -30,6 +34,9 @@ function MainContent() {
     if (activeContextView === 'chat') {
       return <AgentChat />;
     }
+    if (activeContextView === 'explorer') {
+      return <EditorLayout />;
+    }
     return <IdeView />;
   }
 
@@ -39,6 +46,16 @@ function MainContent() {
       return <ApiKeysSettings />;
     }
     return <SettingsModules />;
+  }
+
+  // ── Core: Agents tab ──────────────────────────────────────
+  if (activeTab === 'agents') {
+    if (activeContextView === 'memory') {
+      return <MemoryPanel />;
+    }
+    if (activeContextView === 'skills') {
+      return <SkillsBrowser />;
+    }
   }
 
   // ── Preset modules: resolve dynamically ───────────────────
@@ -58,6 +75,12 @@ function MainContent() {
 }
 
 export default function App() {
+  const { mode } = useLayoutStore();
+
+  if (mode === 'agentic') {
+    return <AgenticLayout />;
+  }
+
   return (
     <Shell>
       <MainContent />

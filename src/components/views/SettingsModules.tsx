@@ -16,7 +16,7 @@ import {
 } from 'lucide-react';
 import { useHermesStore } from '../../stores/hermesStore';
 import { useModuleStore } from '../../stores/moduleStore';
-import { useEffect } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import type { ModuleId, InstallStatus } from '../../services/moduleInstaller';
 
 // ─── Module Card ────────────────────────────────────────────────
@@ -234,20 +234,114 @@ export function SettingsModules() {
   const { status, checkConnection } = useHermesStore();
   const { modules, detectAll } = useModuleStore();
 
+  // ── Kit Status ──
+  const [kitStatus, setKitStatus] = useState<
+    'unknown' | 'applied' | 'available' | 'applying' | 'error' | 'ota-available' | 'ota-downloading'
+  >('unknown');
+  const [kitVersion, setKitVersion] = useState<string | null>(null);
+  const [otaVersion, setOtaVersion] = useState<string | null>(null);
+  const [otaProgress, setOtaProgress] = useState<{ percent: number; step: string } | null>(null);
+
   useEffect(() => {
     checkConnection();
     detectAll();
+
+    // Check kit status on mount (bundled + remote)
+    import('../../services/hermesProvisioner').then(async ({ getAppliedKitVersion, isKitUpdateAvailable, checkRemoteKitUpdate }) => {
+      const manifest = await getAppliedKitVersion();
+      if (manifest) {
+        setKitVersion(manifest.version);
+      }
+
+      // First check bundled update
+      const bundledAvailable = await isKitUpdateAvailable();
+      if (bundledAvailable) {
+        setKitStatus('available');
+        return;
+      }
+
+      // Then check remote OTA update (non-blocking)
+      if (manifest) {
+        setKitStatus('applied');
+      }
+      try {
+        const otaInfo = await checkRemoteKitUpdate();
+        if (otaInfo.available) {
+          setKitStatus('ota-available');
+          setOtaVersion(otaInfo.remoteVersion);
+        }
+      } catch {
+        // Remote check failure is non-fatal
+      }
+    }).catch(() => {});
   }, [checkConnection, detectAll]);
+
+  const handleReapplyKit = useCallback(async () => {
+    setKitStatus('applying');
+    try {
+      const { forceReapplyKit } = await import('../../services/hermesProvisioner');
+      const result = await forceReapplyKit();
+      if (result.success) {
+        setKitStatus('applied');
+        setKitVersion(result.kitVersion);
+      } else {
+        setKitStatus('error');
+        setTimeout(() => setKitStatus('applied'), 3000);
+      }
+    } catch {
+      setKitStatus('error');
+      setTimeout(() => setKitStatus('applied'), 3000);
+    }
+  }, []);
+
+  const handleOtaUpdate = useCallback(async () => {
+    setKitStatus('ota-downloading');
+    setOtaProgress({ percent: 0, step: 'Starting OTA update...' });
+    try {
+      const { downloadAndApplyOtaKit } = await import('../../services/hermesProvisioner');
+      const result = await downloadAndApplyOtaKit((percent, step) => {
+        setOtaProgress({ percent, step });
+      });
+      if (result.success) {
+        setKitStatus('applied');
+        setKitVersion(result.kitVersion);
+        setOtaVersion(null);
+        setOtaProgress(null);
+      } else {
+        setKitStatus('error');
+        setOtaProgress(null);
+        setTimeout(() => setKitStatus('applied'), 3000);
+      }
+    } catch {
+      setKitStatus('error');
+      setOtaProgress(null);
+      setTimeout(() => setKitStatus('applied'), 3000);
+    }
+  }, []);
+
+  const handleCheckOta = useCallback(async () => {
+    try {
+      const { checkRemoteKitUpdate } = await import('../../services/hermesProvisioner');
+      const otaInfo = await checkRemoteKitUpdate();
+      if (otaInfo.available) {
+        setKitStatus('ota-available');
+        setOtaVersion(otaInfo.remoteVersion);
+      }
+    } catch {
+      // Silent fail
+    }
+  }, []);
 
   // Merge detection status with Hermes live status
   const hermesStatus = status.online ? 'installed' as const : 
     modules.hermes.status === 'installed' ? 'offline' as const : 
     modules.hermes.status;
 
+  const kitDetail = kitVersion ? ` · Kit v${kitVersion}` : '';
   const hermesDetail = status.online 
-    ? `${status.model} · localhost:8642`
+    ? `${status.model} · localhost:8642${kitDetail}`
     : modules.hermes.status === 'installed' 
-      ? `${modules.hermes.path} · Run: hermes gateway`
+      ? `${modules.hermes.path} · Run: hermes gateway${kitDetail}`
       : modules.hermes.error 
         ? modules.hermes.error
         : 'Python/uv · git clone + ./setup-hermes.sh';
@@ -292,6 +386,140 @@ export function SettingsModules() {
               onAction={checkConnection}
               actionLabel="Refresh Status"
             />
+
+            {/* Autarch OS Kit Status */}
+            {(modules.hermes.status === 'installed' || status.online) && (
+              <motion.div
+                className="rounded-lg overflow-hidden"
+                style={{
+                  background: 'var(--color-surface-section)',
+                  border: '1px solid var(--color-border-ghost)',
+                }}
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+              >
+                <div className="flex items-center gap-2 px-5 py-3">
+                  <Shield className="w-4 h-4" style={{ color: 'var(--color-accent)' }} />
+                  <span className="text-[11px] font-medium" style={{ color: 'var(--color-text-secondary)', fontFamily: 'var(--font-display)' }}>
+                    Autarch OS Kit
+                  </span>
+                  {kitStatus === 'applied' && kitVersion && (
+                    <span
+                      className="text-[9px] px-1.5 py-0.5 rounded font-medium uppercase tracking-wider"
+                      style={{ background: 'rgba(16,185,129,0.1)', color: 'var(--color-success)', fontFamily: 'var(--font-mono)' }}
+                    >
+                      v{kitVersion} applied
+                    </span>
+                  )}
+                  {kitStatus === 'available' && (
+                    <span
+                      className="text-[9px] px-1.5 py-0.5 rounded font-medium uppercase tracking-wider"
+                      style={{ background: 'rgba(245,158,11,0.1)', color: 'var(--color-accent)', fontFamily: 'var(--font-mono)' }}
+                    >
+                      bundled update
+                    </span>
+                  )}
+                  {kitStatus === 'ota-available' && otaVersion && (
+                    <span
+                      className="text-[9px] px-1.5 py-0.5 rounded font-medium uppercase tracking-wider"
+                      style={{ background: 'rgba(99,102,241,0.1)', color: '#818cf8', fontFamily: 'var(--font-mono)' }}
+                    >
+                      v{otaVersion} remote
+                    </span>
+                  )}
+                  <div className="flex-1" />
+                  <div className="flex items-center gap-2">
+                    {/* OTA Check Button (only when up-to-date with bundled) */}
+                    {kitStatus === 'applied' && (
+                      <motion.button
+                        onClick={handleCheckOta}
+                        className="flex items-center gap-1 px-2 py-1 rounded text-[10px]"
+                        style={{
+                          color: 'var(--color-text-quaternary)',
+                        }}
+                        whileHover={{ scale: 1.05, color: 'var(--color-text-secondary)' }}
+                        whileTap={{ scale: 0.95 }}
+                        title="Check for remote updates"
+                      >
+                        <Globe className="w-3 h-3" />
+                        Check OTA
+                      </motion.button>
+                    )}
+                    {/* Primary Action Button */}
+                    <motion.button
+                      onClick={
+                        kitStatus === 'ota-available' ? handleOtaUpdate :
+                        kitStatus === 'available' ? handleReapplyKit :
+                        handleReapplyKit
+                      }
+                      disabled={kitStatus === 'applying' || kitStatus === 'ota-downloading'}
+                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-[11px] font-medium"
+                      style={
+                        kitStatus === 'ota-available' ? {
+                          background: 'linear-gradient(135deg, #818cf8, #6366f1)',
+                          color: '#fff',
+                        } : kitStatus === 'available' ? {
+                          background: 'linear-gradient(135deg, var(--color-accent), var(--color-accent-dim))',
+                          color: '#000',
+                        } : {
+                          background: 'var(--color-surface-component)',
+                          color: 'var(--color-text-tertiary)',
+                          border: '1px solid var(--color-border-ghost)',
+                        }
+                      }
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.97 }}
+                    >
+                      {kitStatus === 'applying' ? (
+                        <><Loader2 className="w-3 h-3 animate-spin" /> Applying...</>
+                      ) : kitStatus === 'ota-downloading' ? (
+                        <><Loader2 className="w-3 h-3 animate-spin" /> Downloading...</>
+                      ) : kitStatus === 'ota-available' ? (
+                        <><Download className="w-3 h-3" /> Update to v{otaVersion}</>
+                      ) : kitStatus === 'available' ? (
+                        <><Download className="w-3 h-3" /> Update Kit</>
+                      ) : (
+                        <><RefreshCw className="w-3 h-3" /> Re-apply Kit</>
+                      )}
+                    </motion.button>
+                  </div>
+                </div>
+
+                {/* OTA Download Progress */}
+                <AnimatePresence>
+                  {kitStatus === 'ota-downloading' && otaProgress && (
+                    <motion.div
+                      className="px-5 pb-3"
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: 'auto' }}
+                      exit={{ opacity: 0, height: 0 }}
+                    >
+                      <div className="flex items-center gap-2 mb-1.5">
+                        <span className="text-[10px]" style={{ color: 'var(--color-text-quaternary)', fontFamily: 'var(--font-mono)' }}>
+                          {otaProgress.step}
+                        </span>
+                        <div className="flex-1" />
+                        <span className="text-[10px] font-medium" style={{ color: 'var(--color-text-tertiary)', fontFamily: 'var(--font-mono)' }}>
+                          {otaProgress.percent}%
+                        </span>
+                      </div>
+                      <div
+                        className="h-1 rounded-full overflow-hidden"
+                        style={{ background: 'var(--color-surface-component)' }}
+                      >
+                        <motion.div
+                          className="h-full rounded-full"
+                          style={{ background: 'linear-gradient(90deg, #818cf8, #6366f1)' }}
+                          initial={{ width: 0 }}
+                          animate={{ width: `${otaProgress.percent}%` }}
+                          transition={{ duration: 0.3 }}
+                        />
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </motion.div>
+            )}
           </div>
         </section>
 

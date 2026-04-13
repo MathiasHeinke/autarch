@@ -1,3 +1,5 @@
+import { hermesEventBus, type HermesEvent } from './eventBus';
+
 /**
  * Hermes Agent HTTP Client
  * 
@@ -18,6 +20,7 @@ export interface HermesStatus {
 export interface ChatMessage {
   role: 'system' | 'user' | 'assistant';
   content: string;
+  id?: string;
 }
 
 export interface ChatResponse {
@@ -167,3 +170,95 @@ export async function sendChat(
     usage: data.usage,
   };
 }
+
+// ─── Runs API (Agentic Execution) ──────────────────────────────
+
+export interface RunOptions {
+  url?: string;
+  assistant_id?: string;
+}
+
+/**
+ * Start a new agentic run. Returns immediately with runId.
+ */
+export async function startRun(
+  input: string,
+  options?: RunOptions
+): Promise<{ runId: string; status: string }> {
+  const url = options?.url ?? DEFAULT_HERMES_URL;
+  
+  const res = await fetch(`${url}/v1/runs`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      input,
+      assistant_id: options?.assistant_id ?? 'default',
+    }),
+  });
+
+  if (!res.ok) {
+    throw new Error(`Hermes API error: ${res.status} ${res.statusText}`);
+  }
+
+  const data = await res.json();
+  return {
+    runId: data.run_id || data.runId,
+    status: data.status,
+  };
+}
+
+/**
+ * Subscribe to SSE events for a specific run.
+ * Returns a cleanup function that closes the EventSource.
+ */
+export function subscribeToRun(
+  runId: string,
+  options?: { url?: string }
+): () => void {
+  const url = options?.url ?? DEFAULT_HERMES_URL;
+  const eventSource = new EventSource(`${url}/v1/runs/${runId}/events`);
+
+  eventSource.onmessage = (event) => {
+    if (event.data === '[DONE]') return;
+    try {
+      const parsed = JSON.parse(event.data) as HermesEvent;
+      hermesEventBus.emit(parsed);
+    } catch {
+      // Ignore invalid JSON
+    }
+  };
+
+  eventSource.onerror = () => {
+    // Attempted to reconnect, or closed by server
+  };
+
+  return () => {
+    eventSource.close();
+  };
+}
+
+// ─── Cron Jobs API ──────────────────────────────────────────────
+
+export async function listJobs(options?: { url?: string }) {
+  const url = options?.url ?? DEFAULT_HERMES_URL;
+  const res = await fetch(`${url}/v1/jobs`);
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  return res.json();
+}
+
+export async function createJob(job: any, options?: { url?: string }) {
+  const url = options?.url ?? DEFAULT_HERMES_URL;
+  const res = await fetch(`${url}/v1/jobs`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(job),
+  });
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  return res.json();
+}
+
+export async function updateJob() { throw new Error('Not implemented'); }
+export async function deleteJob() { throw new Error('Not implemented'); }
+export async function pauseJob() { throw new Error('Not implemented'); }
+export async function resumeJob() { throw new Error('Not implemented'); }
+export async function triggerJob() { throw new Error('Not implemented'); }

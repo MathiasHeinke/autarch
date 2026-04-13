@@ -514,11 +514,30 @@ export async function installHermes(opts: InstallOptions = {}): Promise<ModuleIn
 
     // Step 3: Verify installation
     progress.step = 'Verifying installation...';
-    progress.percent = 95;
+    progress.percent = 93;
     opts.onProgress?.({ ...progress });
 
     const info = await detectHermes();
-    
+
+    // Step 4: Apply Autarch OS Kit (personas, SOUL, skills)
+    if (info.status === 'installed') {
+      progress.step = 'Applying Autarch OS configuration...';
+      progress.percent = 96;
+      opts.onProgress?.({ ...progress });
+
+      try {
+        const { applyHermesKit } = await import('./hermesProvisioner');
+        const kitResult = await applyHermesKit();
+        if (kitResult.success) {
+          progress.output.push(`✓ Kit v${kitResult.kitVersion}: ${kitResult.applied.join(', ')}`);
+        } else {
+          progress.output.push(`⚠ Kit partially applied: ${kitResult.errors.join(', ')}`);
+        }
+      } catch (e) {
+        progress.output.push(`⚠ Kit provisioning skipped: ${e instanceof Error ? e.message : 'unknown'}`);
+      }
+    }
+
     progress.step = 'Complete!';
     progress.percent = 100;
     opts.onProgress?.({ ...progress });
@@ -530,6 +549,12 @@ export async function installHermes(opts: InstallOptions = {}): Promise<ModuleIn
     // Check if hermes was actually installed despite error code
     const info = await detectHermes();
     if (info.status === 'installed') {
+      // Also try to provision even if setup had warnings
+      try {
+        const { applyHermesKit } = await import('./hermesProvisioner');
+        await applyHermesKit();
+      } catch { /* Kit provisioning is best-effort */ }
+
       progress.step = 'Setup completed with warnings';
       progress.percent = 100;
       opts.onProgress?.({ ...progress });

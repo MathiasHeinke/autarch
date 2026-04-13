@@ -12,6 +12,7 @@ import { motion } from 'framer-motion';
 import { useLayoutStore } from '../../stores/layoutStore';
 import { useHermesStore } from '../../stores/hermesStore';
 import { activePreset } from '../../presets';
+import { ModelSwitcher } from '../views/ModelSwitcher';
 
 // ─── Core tabs (always visible) ─────────────────────────────────
 const CORE_TABS_BEFORE = [
@@ -30,7 +31,7 @@ const MODULE_ICONS: Record<string, typeof Megaphone> = {
 };
 
 export function TopNav() {
-  const { activeTab, setActiveTab, setActiveContextView } = useLayoutStore();
+  const { activeTab, setActiveTab, setActiveContextView, setMode } = useLayoutStore();
   const { status, startPolling } = useHermesStore();
 
   useEffect(() => {
@@ -60,6 +61,8 @@ export function TopNav() {
         <motion.div 
           className="w-6 h-6 rounded-md flex items-center justify-center cursor-pointer"
           style={{ background: 'linear-gradient(135deg, var(--color-accent), var(--color-accent-dim))' }}
+          onClick={() => setMode('agentic')}
+          title="Switch to Agentic Mode"
           whileHover={{ scale: 1.1, boxShadow: '0 0 16px rgba(245,158,11,0.4)' }}
           whileTap={{ scale: 0.95 }}
           transition={{ type: 'spring' as const, damping: 20, stiffness: 400 }}
@@ -112,9 +115,12 @@ export function TopNav() {
         })}
       </nav>
 
+      {/* Model Switcher */}
+      <ModelSwitcher className="ml-auto mr-2" />
+
       {/* Hermes Status — Hero Indicator (live health check) */}
       <motion.div 
-        className="flex items-center gap-2.5 ml-auto py-1 px-3 rounded-md cursor-pointer"
+        className="flex items-center gap-2.5 py-1 px-3 rounded-md cursor-pointer"
         style={{ 
           background: status.online ? 'rgba(16, 185, 129, 0.06)' : 'rgba(239, 68, 68, 0.06)',
           border: `1px solid ${status.online ? 'rgba(16, 185, 129, 0.15)' : 'rgba(239, 68, 68, 0.15)'}`,

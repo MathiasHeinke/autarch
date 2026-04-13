@@ -1,0 +1,11 @@
+{
+  "version": "1.0.0",
+  "name": "autarch-hermes-kit",
+  "description": "Autarch OS persona suite, SOUL identity, and skill library for Hermes Agent",
+  "files": [
+    "config.yaml",
+    "SOUL.md",
+    "skills/"
+  ],
+  "remoteBaseUrl": "https://raw.githubusercontent.com/ares-os/autarch/main/hermes-kit"
+}

@@ -55,6 +55,10 @@ export interface PresetConfig {
   modules: ModuleDefinition[];
   /** Default Hermes clone URL (can be overridden in settings) */
   hermesCloneUrl?: string;
+  /** Path to the hermes-kit resource directory (relative to app bundle resources) */
+  hermesKitPath?: string;
+  /** Remote base URL for OTA kit updates (e.g. GitHub raw content URL) */
+  kitUpdateUrl?: string;
   /** Branding overrides */
   branding?: {
     appName?: string;

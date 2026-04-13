@@ -66,6 +66,8 @@ export const aresPreset: PresetConfig = {
   name: 'ares',
   modules: [marketingModule],
   hermesCloneUrl: 'https://github.com/ares-os/hermes-agent.git',
+  hermesKitPath: 'hermes-kit',
+  kitUpdateUrl: 'https://raw.githubusercontent.com/ares-os/autarch/main/hermes-kit',
   branding: {
     appName: 'AUTARCH',
     footerLabel: 'autarch v0.1.0',
