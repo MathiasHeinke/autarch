@@ -9,8 +9,8 @@ import { useState, useRef } from 'react';
 import { AgentInlineEditOverlay } from './AgentInlineEditOverlay';
 
 export function MonacoEditor() {
-  const { activeFilePath, openFiles, fileContents, setActiveFile, closeFile, updateFileContent } = useEditorStore();
-  const [markdownViewMode, setMarkdownViewMode] = useState<'source' | 'preview'>('preview');
+  const { activeFilePath, openFiles, fileContents, hasUnsavedChanges, setActiveFile, closeFile, updateFileContent } = useEditorStore();
+  const [markdownViewMode, setMarkdownViewMode] = useState<'source' | 'preview'>('source');
   
   // Overlay State
   const [editorInst, setEditorInst] = useState<editor.IStandaloneCodeEditor | null>(null);
@@ -114,7 +114,7 @@ export function MonacoEditor() {
               )}
               onClick={() => setActiveFile(path)}
             >
-              <span className="flex-1 truncate">{fileName}</span>
+              <span className="flex-1 truncate">{fileName}{hasUnsavedChanges[path] ? " *" : ""}</span>
               <button 
                 className={clsx(
                   "p-0.5 rounded-sm hover:bg-white/10",

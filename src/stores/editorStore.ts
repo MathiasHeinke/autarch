@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { readDir, readTextFile, writeTextFile, mkdir, remove } from '@tauri-apps/plugin-fs';
 import { open } from '@tauri-apps/plugin-dialog';
+
 export interface FileNode {
   name: string;
   path: string;
@@ -15,6 +16,7 @@ interface EditorState {
   activeFilePath: string | null;
   openFiles: string[];
   fileContents: Record<string, string>;
+  hasUnsavedChanges: Record<string, boolean>;
   
   openWorkspace: () => Promise<void>;
   refreshWorkspace: () => Promise<void>;
@@ -60,25 +62,31 @@ export const useEditorStore = create<EditorState>((set, get) => ({
   activeFilePath: null,
   openFiles: [],
   fileContents: {},
+  hasUnsavedChanges: {},
 
   openWorkspace: async () => {
     try {
       const selected = await open({ directory: true, multiple: false });
       if (selected && typeof selected === 'string') {
-        set({ workspaceRoot: selected, fileTree: [], openFiles: [], activeFilePath: null, fileContents: {} });
+        set({ workspaceRoot: selected, fileTree: [], openFiles: [], activeFilePath: null, fileContents: {}, hasUnsavedChanges: {} });
         await get().refreshWorkspace();
       }
     } catch (e) {
       console.error('[EditorStore] Failed to open workspace:', e);
+      window.alert(`[Dialog Error] Could not open dialog API. Check capabilities or try again. Details: ${e instanceof Error ? e.message : JSON.stringify(e)}`);
     }
   },
 
   refreshWorkspace: async () => {
     const root = get().workspaceRoot;
     if (!root) return;
-    const folderName = root.split('/').pop() || 'Workspace';
-    const rootNode = await buildFileTree(root, folderName);
-    set({ fileTree: rootNode.children || [] });
+    try {
+      const folderName = root.split('/').pop() || 'Workspace';
+      const rootNode = await buildFileTree(root, folderName);
+      set({ fileTree: rootNode.children || [] });
+    } catch(err) {
+      console.error("Workspace refresh error", err);
+    }
   },
 
   setActiveFile: (path) => set({ activeFilePath: path }),
@@ -88,7 +96,7 @@ export const useEditorStore = create<EditorState>((set, get) => ({
     if (!state.fileContents[path]) {
       try {
         const content = await readTextFile(path);
-        set((s) => ({ fileContents: { ...s.fileContents, [path]: content } }));
+        set((s) => ({ fileContents: { ...s.fileContents, [path]: content }, hasUnsavedChanges: { ...s.hasUnsavedChanges, [path]: false } }));
       } catch (err) {
         console.error('Failed to read file:', err);
         return;
@@ -100,6 +108,7 @@ export const useEditorStore = create<EditorState>((set, get) => ({
       activeFilePath: path,
     }));
   },
+  
   closeFile: (path) => set((state) => {
     const newOpenFiles = state.openFiles.filter(f => f !== path);
     return {
@@ -107,15 +116,22 @@ export const useEditorStore = create<EditorState>((set, get) => ({
       activeFilePath: state.activeFilePath === path ? (newOpenFiles[newOpenFiles.length - 1] || null) : state.activeFilePath
     };
   }),
-  updateFileContent: (path, content) => set((state) => ({
-    fileContents: { ...state.fileContents, [path]: content }
-  })),
+
+  updateFileContent: (path, content) => {
+    set((state) => ({
+      fileContents: { ...state.fileContents, [path]: content },
+      hasUnsavedChanges: { ...state.hasUnsavedChanges, [path]: true }
+    }));
+  },
   
   saveFile: async (path) => {
     const content = get().fileContents[path];
     if (content !== undefined) {
       try {
         await writeTextFile(path, content);
+        set((state) => ({
+          hasUnsavedChanges: { ...state.hasUnsavedChanges, [path]: false }
+        }));
       } catch (err) {
         console.error('Failed to save file:', err);
       }

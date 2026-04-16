@@ -23,6 +23,7 @@
         { "name": "ls", "cmd": "ls", "args": true },
         { "name": "nohup", "cmd": "nohup", "args": true },
         { "name": "bash", "cmd": "bash", "args": true },
+        { "name": "sh", "cmd": "sh", "args": true },
         { "name": "brew", "cmd": "brew", "args": true },
         { "name": "git", "cmd": "git", "args": true },
         { "name": "shasum", "cmd": "shasum", "args": true }

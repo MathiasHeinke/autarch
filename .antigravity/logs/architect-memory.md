@@ -266,3 +266,10 @@
   4. **Auto-Batch Runner:** Lokales Shell-Script (`ares-pipeline-runner.sh`) mit `limit=1` und 15s-Intervall. Stabiler als parallele Batches wegen 150s Edge Function Timeout.
 - **Ergebnis:** Pipeline verarbeitet autonom 60+ Artikel. Top-Scores: epa-dha-ratio 92, cortisol-hrv 90, magnesium 89. Bilder: 16:9, 2K, cinematic scientific illustrations.
 - **Offene Punkte:** Runner bis Completion laufen lassen. Auto-Indexing nach Image-Phase verifizieren.
+
+### 2026-04-17T01:00:00+02:00 — Session Log: IDE Terminal & Native IO Hardening
+- **Objective:** Fix silent rendering and state bugs in the Autarch OS IDE interface (Terminal & Explorer).
+- **Terminal Capabilities & Process Spawn:** Uncovered silent `unhandledRejection` caused by missing `sh` in Tauri v2 capabilities (`src-tauri/capabilities/default.json`). PTY initialized completely blind because `zsh` inherited the Vite environment without `PATH` from `import.meta.env`. Stripped the `env` param from `spawn()` to restore accurate native subshell inheritance.
+- **PTY UI Refactor:** Upgraded the barebones `Terminal.tsx` into a fully-fledged VS Code-like panel featuring Tabs (`Problems`, `Output`, `Terminal`), Action Toolbars, and state tracking limits for crashed shells.
+- **File System Saves:** Injected `window.alert` inside `editorStore` for silent failing dialog APIs. `Cmd+S` saves now reflect dynamically natively in the UI with a `*[Unsaved]` visual indicator via updated `editorStore` state handling.
+- **Status:** **Shipped**. Next step involves linking Hermes stdio stream directly to Agent Chat tabs or pushing edge functionalities.

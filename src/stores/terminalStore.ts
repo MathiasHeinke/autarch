@@ -93,15 +93,22 @@ export async function initGlobalPty() {
     console.log('[TerminalStore] Spawning PTY with shell:', shell);
     globalPtyProcess = spawn(shell, [], { 
       cols: 80, 
-      rows: 24,
-      env: {
-        ...Object.fromEntries(
-          Object.entries(import.meta.env).filter(([k]) => typeof k === 'string')
-        ),
-        TERM: 'xterm-256color',
-        COLORTERM: 'truecolor',
-      }
+      rows: 24
     } as Parameters<typeof spawn>[2]);
+
+    // Expose internal errors (like missing Tauri V2 capability) directly to the terminal
+    // @ts-ignore
+    if (globalPtyProcess && globalPtyProcess._init) {
+      // @ts-ignore
+      globalPtyProcess._init.catch((err: any) => {
+        console.error('[Terminal] PTY Internal Spawn Error:', err);
+        const msg = new TextEncoder().encode(`\r\n\x1b[1;31m⚠ PTY SPAWN ERROR:\x1b[0m ${err instanceof Error ? err.message : JSON.stringify(err)}\r\n\x1b[1;33mThis is likely a Tauri V2 Capabilities issue. Check src-tauri/capabilities/default.json\x1b[0m\r\n`);
+        ptyBuffer.push(msg);
+        ptySubscribers.forEach(cb => cb(msg));
+        store.setShellReady(false);
+      });
+    }
+
     store.setShellReady(true);
     store.setPtyWriteFn((data: string) => {
       globalPtyProcess?.write(data);
