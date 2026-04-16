@@ -38,7 +38,7 @@ export function EditorLayout() {
         />
 
         {/* File Explorer (RIGHT) — real workspace file tree */}
-        <Panel id="files-v4" defaultSize={25} minSize={15} maxSize={45}>
+        <Panel id="files-v4" defaultSize={25} minSize={15}>
           <FileExplorer />
         </Panel>
       </PanelGroup>

@@ -62,10 +62,14 @@ export const useEditorStore = create<EditorState>((set, get) => ({
   fileContents: {},
 
   openWorkspace: async () => {
-    const selected = await open({ directory: true, multiple: false });
-    if (selected && typeof selected === 'string') {
-      set({ workspaceRoot: selected, fileTree: [], openFiles: [], activeFilePath: null, fileContents: {} });
-      await get().refreshWorkspace();
+    try {
+      const selected = await open({ directory: true, multiple: false });
+      if (selected && typeof selected === 'string') {
+        set({ workspaceRoot: selected, fileTree: [], openFiles: [], activeFilePath: null, fileContents: {} });
+        await get().refreshWorkspace();
+      }
+    } catch (e) {
+      console.error('[EditorStore] Failed to open workspace:', e);
     }
   },
 

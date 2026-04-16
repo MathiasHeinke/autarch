@@ -88,7 +88,6 @@ export function AgenticLayout() {
             id="explorer"
             defaultSize={agenticPanelSizes['feed'] ?? 20} 
             minSize={15}
-            maxSize={30}
           >
             <FileExplorer />
           </Panel>

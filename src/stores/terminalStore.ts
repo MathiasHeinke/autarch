@@ -102,6 +102,7 @@ export async function initGlobalPty() {
         COLORTERM: 'truecolor',
       }
     } as Parameters<typeof spawn>[2]);
+    store.setShellReady(true);
     store.setPtyWriteFn((data: string) => {
       globalPtyProcess?.write(data);
     });
