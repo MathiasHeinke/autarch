@@ -18,6 +18,6 @@ Lies: memory-bank/semantic-context.md (falls vorhanden)
 // turbo
 ```
 Lies: .antigravity/agentic-router.md → Sektion "📈 MASTERTABLE: Marketing & Sales"
-Lade alle Personas am Tisch: Alex Hormozi (Vorsitz), Gary Vaynerchuk, Don Draper, Steve Jobs, Daniel Kahneman
+Lade alle Personas am Tisch: The Growth Engine (Vorsitz), The Growth Engine, Don Draper, Steve Jobs, Daniel Kahneman
 Starte das Mastertable-Ablauf-Protokoll (5 Schritte): Briefing → Solo-Analyse → Konfrontation → Konklusion → User-Decision
 ```

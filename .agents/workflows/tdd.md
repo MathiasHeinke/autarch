@@ -54,10 +54,10 @@ Bestimme BEVOR Code geschrieben wird:
 3. Commit: "feat: [Funktionsname] — passing"
 ```
 
-### 🔄 REFACTOR — Gordon Ramsay Cleanup
+### 🔄 REFACTOR — The Refactorer Cleanup
 
 ```
-1. Lade Gordon Ramsay Mindset: .antigravity/personas/gordon-ramsay.md
+1. Lade The Refactorer Mindset: .antigravity/personas/the-refactorer.md
 2. Refactore den Code: DRY, Clean Naming, Edge Cases härten
 3. Verifiziere: Test MUSS immer noch bestehen
    → Falls Test bricht: Refactoring war zu aggressiv, Rollback!

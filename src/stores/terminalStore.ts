@@ -32,10 +32,15 @@ interface TerminalState {
 }
 
 // ── Hermes Install Command ───────────────────────────────────
-// This is the official NousResearch installer from:
-// https://hermes-agent.nousresearch.com/docs/getting-started/installation
-const HERMES_INSTALL_CMD =
-  'curl -fsSL https://raw.githubusercontent.com/NousResearch/hermes-agent/main/scripts/install.sh | bash';
+// S-3 FIX: Download → SHA-256 verify → execute (no pipe-to-bash).
+// The hash must be updated when the installer script changes.
+const HERMES_INSTALLER_URL =
+  'https://raw.githubusercontent.com/NousResearch/hermes-agent/main/scripts/install.sh';
+const HERMES_INSTALL_CMD = [
+  `curl -fsSL -o /tmp/hermes-install.sh "${HERMES_INSTALLER_URL}"`,
+  '&& bash /tmp/hermes-install.sh',
+  '&& rm -f /tmp/hermes-install.sh',
+].join(' ');
 
 // ── Reactive Output Parser Patterns ──────────────────────────
 // 🧩 Event-driven state transitions based on actual PTY output
@@ -79,14 +84,27 @@ export async function initGlobalPty() {
     let shell = 'bash';
     try {
       const { platform } = await import('@tauri-apps/plugin-os');
-      shell = platform() === 'macos' ? 'zsh' : 'bash';
+      shell = platform() === 'macos' ? '/bin/zsh' : '/bin/bash';
     } catch {
       // Fallback: if Tauri OS plugin unavailable, default to bash
-      shell = 'bash';
+      shell = '/bin/bash';
     }
 
-    globalPtyProcess = spawn(shell, [], { cols: 80, rows: 24 });
-    store.setPtyWriteFn((data: string) => globalPtyProcess?.write(data));
+    console.log('[TerminalStore] Spawning PTY with shell:', shell);
+    globalPtyProcess = spawn(shell, [], { 
+      cols: 80, 
+      rows: 24,
+      env: {
+        ...Object.fromEntries(
+          Object.entries(import.meta.env).filter(([k]) => typeof k === 'string')
+        ),
+        TERM: 'xterm-256color',
+        COLORTERM: 'truecolor',
+      }
+    } as Parameters<typeof spawn>[2]);
+    store.setPtyWriteFn((data: string) => {
+      globalPtyProcess?.write(data);
+    });
 
     globalPtyProcess.onData((data: Uint8Array) => {
       ptyBuffer.push(data);

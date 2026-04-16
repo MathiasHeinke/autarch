@@ -13,18 +13,12 @@ description: NOUS Lifecycle — 4-phasiger Workflow von Ideation bis Ship mit Au
 
 1. **User beschreibt Idee/Problem** — NOUS hört zu und versteht was der User WIRKLICH will.
 2. **NOUS lädt Kontext:**
-   - `memory-bank/system-index.md` (Boot-Index)
-   - `memory-bank/semantic-context.md` (Core Brain)
-   - `memory-bank/activeContext.md` (Aktueller Stand)
-   - `.antigravity/logs/architect-memory.md` (Active Directives)
+   - `.antigravity/logs/architect-memory.md` (Active Directives + Session Log)
    - `.antigravity/agentic-router.md` (Dispatch-Tabelle)
 3. **NOUS routet:**
    - Einfache Idee → NOUS diskutiert 1:1 mit dem User
    - Komplexe Idee → `@mastertable:strategy` oder `@team:dynamic` für Brainstorming
 4. **Output:** Klare Richtung + Frage an User: *"Sollen wir planen?"*
-
-### 🧠 Memory Checkpoint
-→ `activeContext.md` updaten: Richtungs-Entscheidung + gewählter Pfad
 
 ---
 
@@ -43,10 +37,6 @@ description: NOUS Lifecycle — 4-phasiger Workflow von Ideation bis Ship mit Au
    - Layer 1 Update wenn nötig (Strategic Guardrails)
 4. **Output:** Plan → User-Review → Freigabe
 
-### 🧠 Memory Checkpoint
-→ `activeContext.md` updaten: Plan-Decisions + Phasen-Übersicht
-→ `semantic-context.md` erweitern (falls neue Architektur-Erkenntnisse)
-
 ---
 
 ## Phase 2: EXECUTE
@@ -61,24 +51,14 @@ description: NOUS Lifecycle — 4-phasiger Workflow von Ideation bis Ship mit Au
    
    Auto-Review-Gate:
    🔍 Sherlock  → Regressions? Edge Cases? Bugs?
-   📐 Uncle Bob → SOLID? Tests? Naming?
-   🚀 Hamilton  → Error Paths? Degradation? Idempotenz?
+   🛠️ The Refactorer → SOLID? Tests? Naming?
+   🛡️ Resilience Engineer  → Error Paths? Degradation? Idempotenz?
    
    CLEAN → weiter.
    FINDINGS → fix, dann weiter.
    ```
 3. **Qualitäts-Ziel:** So sauber arbeiten, dass der Review NICHTS mehr findet.
 4. **Output:** Fertiger Code, getestet, reviewed.
-
-### 🧠 Memory Checkpoint (nach JEDER Build-Phase)
-1. `activeContext.md` updaten: Was gebaut + was als Nächstes
-2. `semantic-context.md` erweitern:
-   ```markdown
-   ### [Datum] — NOUS Lifecycle: [Feature] — Phase 2 Build
-   **Geänderte Module:** [Liste]
-   **Erkenntnisse:** [Was haben wir über das System gelernt?]
-   **Entscheidungen:** [Was wurde entschieden und warum?]
-   ```
 
 ---
 

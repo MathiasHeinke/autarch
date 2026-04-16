@@ -100,7 +100,7 @@ function getHermesPaths(home: string): string[] {
 
 // Clone URL comes from active preset (configurable per deployment)
 import { activePreset } from '../presets';
-const getHermesCloneUrl = () => activePreset.hermesCloneUrl ?? 'https://github.com/autarch/hermes-agent.git';
+const getHermesCloneUrl = () => activePreset.hermesCloneUrl ?? 'https://github.com/NousResearch/hermes-agent.git';
 
 
 // ─── Shell Execution Helper ─────────────────────────────────────
@@ -416,7 +416,7 @@ export async function installZed(opts: InstallOptions = {}): Promise<ModuleInfo>
  * - PATH configuration (~/.zshrc)
  * - Skills sync to ~/.hermes/skills/
  * 
- * Official: https://github.com/autarch/hermes-agent
+ * Official: https://github.com/NousResearch/hermes-agent
  * Install:  ./setup-hermes.sh (non-interactive)
  */
 export async function installHermes(opts: InstallOptions = {}): Promise<ModuleInfo> {

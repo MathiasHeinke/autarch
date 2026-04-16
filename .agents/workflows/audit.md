@@ -15,7 +15,7 @@ description: Quick Audit — Sherlock→Ramsay Chain (Shortcut für /sherlock-au
    - Findings nach Severity: 🔴 Critical, 🟡 Warning, 🟢 Info.
    - Output: Strukturierter Audit-Report.
 
-2. **Gordon Ramsay bereinigen:** Lies `.antigravity/personas/gordon-ramsay.md`.
+2. **The Refactorer bereinigen:** Lies `.antigravity/personas/the-refactorer.md`.
    - Refactoring-Plan mit konkreten Fixes für die gefundenen Issues.
    - Dead Code, Duplikate, Style-Violations behandeln.
 

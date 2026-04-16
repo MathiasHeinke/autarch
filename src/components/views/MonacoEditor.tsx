@@ -1,4 +1,5 @@
-import Editor from '@monaco-editor/react';
+import Editor, { Monaco } from '@monaco-editor/react';
+import type { editor, IRange } from 'monaco-editor';
 import { useEditorStore } from '../../stores/editorStore';
 import { X, Eye, Code } from 'lucide-react';
 import clsx from 'clsx';
@@ -12,12 +13,12 @@ export function MonacoEditor() {
   const [markdownViewMode, setMarkdownViewMode] = useState<'source' | 'preview'>('preview');
   
   // Overlay State
-  const [editorInst, setEditorInst] = useState<any>(null);
+  const [editorInst, setEditorInst] = useState<editor.IStandaloneCodeEditor | null>(null);
   const editorContainerRef = useRef<HTMLDivElement>(null);
   const [overlayState, setOverlayState] = useState<{
     position: { top: number; left: number };
     selectedText: string;
-    range: any;
+    range: IRange;
   } | null>(null);
 
   if (!activeFilePath || openFiles.length === 0) {
@@ -41,20 +42,28 @@ export function MonacoEditor() {
     'md': 'markdown',
   }[ext] || 'plaintext';
 
-  const handleEditorMount = (editor: any, monaco: any) => {
-    setEditorInst(editor);
+  const handleEditorMount = (ed: editor.IStandaloneCodeEditor, monaco: Monaco) => {
+    setEditorInst(ed);
+
+    // Register Cmd+S
+    ed.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyS, async () => {
+      const state = useEditorStore.getState();
+      if (state.activeFilePath) {
+        await state.saveFile(state.activeFilePath);
+      }
+    });
 
     // Register Cmd+K 
-    editor.addAction({
+    ed.addAction({
       id: 'autarch-inline-edit',
       label: 'Autarch: Inline Edit (Cmd+K)',
       keybindings: [monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyK],
       contextMenuGroupId: 'navigation',
       contextMenuOrder: 1.5,
-      run: (ed: any) => {
+      run: (ed: editor.IStandaloneCodeEditor) => {
         const selection = ed.getSelection();
         const model = ed.getModel();
-        if (!model) return;
+        if (!model || !selection) return;
         const text = model.getValueInRange(selection) || '';
         
         const pos = ed.getScrolledVisiblePosition({ 
@@ -73,7 +82,7 @@ export function MonacoEditor() {
     });
 
     // Hide if user clicks elsewhere in the editor
-    editor.onMouseDown(() => {
+    ed.onMouseDown(() => {
       setOverlayState(null);
     });
   };

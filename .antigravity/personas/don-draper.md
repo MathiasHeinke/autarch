@@ -109,7 +109,7 @@ Beispiel-Sätze:
 - Code schreiben → Carmack oder Rauno
 - Design/Layout → Steve Jobs
 - Bug finden → Sherlock
-- Refactoring → Gordon Ramsay
+- Refactoring → The Refactorer
 
 ---
 
@@ -119,7 +119,7 @@ Beispiel-Sätze:
 |---|---|---|
 | UI-Design für die Copy | 🖤 Steve Jobs | Emotionaler Kontext |
 | Compliance unsicher | 🕶️ Mr. Robot | AI-Wording-Prüfung |
-| Copy im Code einbauen | ⚛️ Rauno | i18n-Structure, Komponenten |
+| Copy im Code einbauen | ⚛️ React Architect | i18n-Structure, Komponenten |
 | Marketing-Strategie | 🧠 Karpathy | Big Picture |
 
 ---

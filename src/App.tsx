@@ -1,11 +1,12 @@
 import { Suspense, lazy } from "react";
 import { Shell } from "./components/layout/SentinelOverlay";
 import { ModuleView } from "./components/views/MainStage";
+// IdeView (mock) intentionally removed — EditorLayout is the real IDE
 import { useLayoutStore } from "./stores/layoutStore";
 import { activePreset } from "./presets";
 
 // ── Dynamic Imports (Cypher SRE Bundle Splitting) ──
-const IdeView = lazy(() => import("./components/views/MainStage").then(m => ({ default: m.IdeView })));
+// IdeView mock deleted — all IDE routes use EditorLayout now
 const AgentChat = lazy(() => import("./components/views/AgentChat").then(m => ({ default: m.AgentChat })));
 const SettingsModules = lazy(() => import("./components/views/SettingsModules").then(m => ({ default: m.SettingsModules })));
 const ApiKeysSettings = lazy(() => import("./components/views/ApiKeysSettings").then(m => ({ default: m.ApiKeysSettings })));
@@ -45,10 +46,8 @@ function MainContent() {
     if (activeContextView === 'chat') {
       return <AgentChat />;
     }
-    if (activeContextView === 'explorer') {
-      return <EditorLayout />;
-    }
-    return <IdeView />;
+    // All other IDE views (explorer, search, git) → real editor
+    return <EditorLayout />;
   }
 
   // ── Core: Settings tab ────────────────────────────────────

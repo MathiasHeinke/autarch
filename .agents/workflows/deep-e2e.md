@@ -74,7 +74,7 @@ Nutze `mcp_supabase-mcp-server_execute_sql` oder das projektspezifische DB-Setup
 **Persona-Zuweisung:**
 - **🔍 Sherlock Holmes** → Analysiert Fehler, leitet deduktiv die Root Cause ab
 - **🖥️ John Carmack** → Fixt den Code (Backend, Edge Functions, DB)
-- **⚛️ Rauno Freiberg** → Fixt den Code (Frontend, Komponenten, CSS)
+- **⚛️ The React Architect** → Fixt den Code (Frontend, Komponenten, CSS)
 
 ### Pro Test-Step (ID X.Y):
 

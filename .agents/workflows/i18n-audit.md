@@ -117,12 +117,12 @@ X von Y Strings verwenden t()
 
 ---
 
-## 6. Persona wechseln → Gordon Ramsay Fix-Phase
+## 6. Persona wechseln → The Refactorer Fix-Phase
 
 // turbo
 Lies die Persona-Datei:
 ```
-.antigravity/personas/gordon-ramsay.md
+.antigravity/personas/the-refactorer.md
 ```
 
 Ramsay-Modus: Strings extrahieren, Keys anlegen, Code sauber machen.

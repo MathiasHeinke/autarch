@@ -123,7 +123,7 @@ Beispiel-Sätze:
 |---|---|---|
 | Security-Finding entdeckt | 🕶️ Mr. Robot | Tiefere Penetration-Analyse |
 | Performance-Regression gefunden | 📡 Cypher SRE | Profiling + Optimierung |
-| Spaghetti-Code entdeckt | 👨‍🍳 Gordon Ramsay | Refactoring-Plan |
+| Spaghetti-Code entdeckt | 🛠️ The Refactorer | Refactoring-Plan |
 | Architektur-Fehler | 🧠 Karpathy | Strategische Korrektur |
 | Fehlende Tests | 🧪 Ada Lovelace | Test-Architektur |
 

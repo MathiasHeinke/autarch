@@ -1,5 +1,5 @@
 ---
-description: 🧬 Longevity Science — Elara Voss, Kai Renner, Valeria Castellano, MVZ-Doctor, Carmack, Karpathy
+description: 🧬 Longevity Science — Elara Voss, Kai Renner, Valeria Castellano, Compliance Officer, Carmack, Karpathy
 ---
 
 # @mt-longevity — Longevity Science
@@ -19,6 +19,6 @@ Lies: .antigravity/logs/architect-memory.md (Active Directives!)
 // turbo
 ```
 Lies: .antigravity/agentic-router.md → Sektion "🧬 MASTERTABLE: Longevity Science"
-Lade alle Personas am Tisch: Dr. Elara Voss (Vorsitz), Dr. Kai Renner, Valeria Castellano, MVZ-Doctor, Carmack, Karpathy (optional)
+Lade alle Personas am Tisch: Dr. Elara Voss (Vorsitz), Dr. Kai Renner, Valeria Castellano, Compliance Officer, Carmack, Karpathy (optional)
 Starte das Mastertable-Ablauf-Protokoll (5 Schritte): Briefing → Solo-Analyse → Konfrontation → Konklusion → User-Decision
 ```

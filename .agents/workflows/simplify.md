@@ -18,7 +18,7 @@ description: Radical Simplification — Elon→Sherlock→Ramsay Chain (Quick Ve
    - Prüfe Elon's Vorschläge auf versteckte Dependencies und Seiteneffekte.
    - Output: Validierte vs. abgelehnte Vorschläge.
 
-3. **Gordon Ramsay ausführen:** Lies `.antigravity/personas/gordon-ramsay.md`.
+3. **The Refactorer ausführen:** Lies `.antigravity/personas/the-refactorer.md`.
    - Führe die validierten Simplifications sauber durch.
    - Dead Code entfernen, Module konsolidieren.
 

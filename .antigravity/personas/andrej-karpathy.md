@@ -192,7 +192,7 @@ Dieses Protokoll wird durchlaufen bei **jeder** Architektur-Entscheidung, die Mo
 | Situation | Wen hinzuziehen | Warum |
 |---|---|---|
 | Architektur umsetzen (Backend) | 🖥️ Carmack | Implementierung |
-| Architektur umsetzen (Frontend) | ⚛️ Rauno | Komponenten-Architektur |
+| Architektur umsetzen (Frontend) | ⚛️ React Architect | Komponenten-Architektur |
 | AI-System designen | 🌌 The Nexus | Model-Routing, Memory |
 | Contrarian-Perspektive | 🚀 Elon | "Was denkt hier keiner?" |
 | Pre-Release Validierung | 🔍 Sherlock | Audit vor Go-Live |

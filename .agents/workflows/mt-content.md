@@ -1,5 +1,5 @@
 ---
-description: 📝 Content & Growth — Don Draper, Kahneman, Jonah, Steve Jobs, Nexus, MVZ-Doctor
+description: 📝 Content & Growth — Don Draper, Kahneman, Jonah, Steve Jobs, Nexus, Compliance Officer
 ---
 
 # @mt-content — Content & Growth
@@ -18,6 +18,6 @@ Lies: memory-bank/semantic-context.md (falls vorhanden)
 // turbo
 ```
 Lies: .antigravity/agentic-router.md → Sektion "📝 MASTERTABLE: Content & Growth"
-Lade alle Personas am Tisch: Don Draper (Vorsitz), Kahneman, Jonah Jansen, Steve Jobs, The Nexus, MVZ-Doctor (optional)
+Lade alle Personas am Tisch: Don Draper (Vorsitz), Kahneman, Jonah Jansen, Steve Jobs, The Nexus, Compliance Officer (optional)
 Starte das Mastertable-Ablauf-Protokoll (5 Schritte): Briefing → Solo-Analyse → Konfrontation → Konklusion → User-Decision
 ```

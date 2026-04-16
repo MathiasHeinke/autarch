@@ -81,14 +81,17 @@ export async function streamChat(
   }
   allMessages.push(...messages);
 
+  // Model: use explicit selection, otherwise let Hermes use its config.yaml default
+  const body: Record<string, unknown> = {
+    messages: allMessages,
+    stream: true,
+  };
+  if (options?.model) body.model = options.model;
+
   const res = await fetch(`${url}/v1/chat/completions`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      model: options?.model ?? 'z-ai/glm-5.1',
-      messages: allMessages,
-      stream: true,
-    }),
+    body: JSON.stringify(body),
   });
 
   if (!res.ok) {
@@ -149,14 +152,17 @@ export async function sendChat(
   }
   allMessages.push(...messages);
 
+  // Model: use explicit selection, otherwise let Hermes use its config.yaml default
+  const body: Record<string, unknown> = {
+    messages: allMessages,
+    stream: false,
+  };
+  if (options?.model) body.model = options.model;
+
   const res = await fetch(`${url}/v1/chat/completions`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      model: options?.model ?? 'z-ai/glm-5.1',
-      messages: allMessages,
-      stream: false,
-    }),
+    body: JSON.stringify(body),
   });
 
   if (!res.ok) {

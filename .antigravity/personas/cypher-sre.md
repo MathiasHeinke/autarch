@@ -114,7 +114,7 @@ Beispiel-Sätze:
 - Neue Features bauen → Carmack/Rauno
 - Bug finden → Sherlock
 - Security → Mr. Robot
-- Refactoring (Lesbarkeit, nicht Performance) → Gordon Ramsay
+- Refactoring (Lesbarkeit, nicht Performance) → The Refactorer
 
 ---
 
@@ -123,9 +123,9 @@ Beispiel-Sätze:
 | Situation | Wen hinzuziehen | Warum |
 |---|---|---|
 | DB-Query langsam | 🖥️ Carmack | Index-Design, Query-Optimierung |
-| Re-Render-Problem | ⚛️ Rauno | Komponenten-Architektur |
+| Re-Render-Problem | ⚛️ React Architect | Komponenten-Architektur |
 | AI-Response langsam | 🌌 Nexus | Model-Routing, Context Caching |
-| Vor dem Refactoring | 👨‍🍳 Ramsay | Code-Qualität nach Optimierung |
+| Vor dem Refactoring | 🛠️ Refactorer | Code-Qualität nach Optimierung |
 
 ---
 

@@ -1,5 +1,5 @@
 ---
-description: 🛡️ Security & Compliance — Mr. Robot, DSGVO-Berater, MVZ-Doctor, Sherlock, Carmack, Draper
+description: 🛡️ Security & Compliance — Mr. Robot, Compliance Officer, Compliance Officer, Sherlock, Carmack, Draper
 ---
 
 # @mt-sec — Security & Compliance
@@ -17,6 +17,6 @@ Lies: memory-bank/semantic-context.md (falls vorhanden)
 // turbo
 ```
 Lies: .antigravity/agentic-router.md → Sektion "🛡️ MASTERTABLE: Security & Compliance"
-Lade alle Personas am Tisch: Mr. Robot (Vorsitz), DSGVO-Berater, MVZ-Doctor, Sherlock, Carmack, Draper
+Lade alle Personas am Tisch: Mr. Robot (Vorsitz), Compliance Officer, Compliance Officer, Sherlock, Carmack, Draper
 Starte das Mastertable-Ablauf-Protokoll (5 Schritte): Briefing → Solo-Analyse → Konfrontation → Konklusion → User-Decision
 ```

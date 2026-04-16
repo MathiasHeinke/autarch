@@ -32,13 +32,9 @@ description: Alle verfügbaren Commands, Shortcuts und Workflows auf einen Blick
 |---------|-------------|
 | `/nous` | 🧬 NOUS Persona laden — Routing, Orientierung, Priorisierung |
 | `/agentic-plan` | 🏗️ Multi-Phase Plan Execution mit Sherlock-Gates |
-| `/deep-work` | 🔥 Autonome Execution (leichter als /agentic-plan) |
-| `/fortress-audit` | 🏰 Full Quality Harness (E2E + Hotfix + Sherlock + Security) |
-| `/sherlock-audit` | 🔍 Full System Audit (8 Schritte + Carmack Gate) |
 | `/audit` | 🔍 Quick Audit — Sherlock→Ramsay Chain |
 | `/simplify` | 🚀 Radical Simplification — Elon→Sherlock→Ramsay |
 | `/elon-redesign` | 🚀 Detailliertes Redesign mit 5-Fragen-Analyse |
-| `/disciplined-build` | 🏗️ TDD Build Cycle (6 Phasen) |
 | `/nous-lifecycle` | 🧬 4-Phase Lifecycle (Ideation→Ship) |
 | `/frontend-feature` | 🎨 UI Build Flow mit Brainstorm-Gate |
 | `/hotfix` | 🔥 Speed Bugfix mit Auto-Review |
@@ -71,8 +67,6 @@ description: Alle verfügbaren Commands, Shortcuts und Workflows auf einen Blick
 | Chain 3 | Audit & Cleanup (`/audit`) | Sherlock → Ramsay |
 | Chain 4 | Fullstack Feature | Jobs → Rauno → Carmack → Robot |
 | Chain 5 | Simplification (`/simplify`) | Elon → Sherlock → Ramsay |
-| Chain 6 | Deep Work (`/deep-work`) | Lead → Sherlock Gate pro Phase |
-| Chain 7 | `/disciplined-build` | Karpathy → Lead → Sherlock → Ramsay |
 
 ---
 

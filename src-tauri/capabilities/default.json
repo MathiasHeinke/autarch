@@ -1,12 +1,33 @@
 {
   "$schema": "../gen/schemas/desktop-schema.json",
   "identifier": "default",
-  "description": "Capability for the main window",
+  "description": "Capability for the main window — scoped shell access for Hermes Agent lifecycle only",
   "windows": ["main"],
   "permissions": [
     "core:default",
     "opener:default",
-    "shell:allow-execute",
+    {
+      "identifier": "shell:allow-execute",
+      "allow": [
+        { "name": "hermes", "cmd": "hermes", "args": true },
+        { "name": "pgrep", "cmd": "pgrep", "args": true },
+        { "name": "kill", "cmd": "kill", "args": true },
+        { "name": "mkdir", "cmd": "mkdir", "args": true },
+        { "name": "cp", "cmd": "cp", "args": true },
+        { "name": "rm", "cmd": "rm", "args": true },
+        { "name": "cat", "cmd": "cat", "args": true },
+        { "name": "chmod", "cmd": "chmod", "args": true },
+        { "name": "echo", "cmd": "echo", "args": true },
+        { "name": "curl", "cmd": "curl", "args": true },
+        { "name": "which", "cmd": "which", "args": true },
+        { "name": "ls", "cmd": "ls", "args": true },
+        { "name": "nohup", "cmd": "nohup", "args": true },
+        { "name": "bash", "cmd": "bash", "args": true },
+        { "name": "brew", "cmd": "brew", "args": true },
+        { "name": "git", "cmd": "git", "args": true },
+        { "name": "shasum", "cmd": "shasum", "args": true }
+      ]
+    },
     "shell:allow-spawn",
     "shell:allow-stdin-write",
     "shell:allow-kill",

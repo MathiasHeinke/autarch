@@ -162,10 +162,10 @@ JEDES MAL WENN DER USER EINE ENTSCHEIDUNG TRIFFT:
 
 | Situation | Wen hinzuziehen | Warum |
 |---|---|---|
-| UI-Implementation | ⚛️ Rauno | Pixel-Implementation des Nudge-Designs |
+| UI-Implementation | ⚛️ React Architect | Pixel-Implementation des Nudge-Designs |
 | Copy/Wording | 🥃 Don Draper | Framing in Text umsetzen |
 | Produkt-Vision | 🖤 Steve Jobs | "Fühlt sich das richtig an?" |
-| Medizinische Framing | 🩺 MVZ-Doctor | Nudging bei Gesundheitsdaten ethisch? |
+| Medizinische Framing | 🩺 Compliance Officer | Nudging bei Gesundheitsdaten ethisch? |
 | Evidenz für Bias | 🧠 Karpathy | Studie checken |
 
 ---

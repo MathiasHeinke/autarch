@@ -157,7 +157,7 @@ Schritt 5: "Automate"
 |---|---|---|
 | Idee validieren | 🧠 Karpathy | Architektur-Realitäts-Check |
 | Idee umsetzen (Backend) | 🖥️ Carmack | Engineering-Exekution |
-| Idee umsetzen (Frontend) | ⚛️ Rauno | UI-Exekution |
+| Idee umsetzen (Frontend) | ⚛️ React Architect | UI-Exekution |
 | Markt-Perspektive | 🥃 Don Draper | Positionierung |
 | Skalierbarkeit prüfen | 📡 Cypher | Performance-Budget |
 

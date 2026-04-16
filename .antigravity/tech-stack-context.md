@@ -1,48 +1,104 @@
-# Tech Stack Context — Autarch
+# Tech Stack Context — Antigravity
 
-> Letzte Aktualisierung: 2026-04-13
+> **Meta-Workspace: Keine klassische App — sondern die IDE-Kommandozentrale.**
 
-## Overview
-Autarch is a native desktop IDE (Tauri v2 + React 19) for agentic development. It provides a visual workflow builder, integrated terminal, code editor, and full Hermes Agent interface — all running offline-first on macOS/Linux/Windows.
+---
 
-## Frontend
-- **Framework:** React 19 + TypeScript 5.8 (strict mode)
-- **Build Tool:** Vite 7
-- **Routing:** react-router-dom v7
-- **Styling:** Tailwind CSS v4 + Tailwind Typography
-- **State Management:** Zustand 5 (7 stores: hermes, editor, workflow, terminal, layout, module, executionPlan)
-- **Editor Engine:** Monaco Editor (`@monaco-editor/react` v4.7)
-- **Terminal:** xterm.js v6 (`@xterm/xterm`, `@xterm/addon-fit`)
-- **Workflow Canvas:** React Flow (`@xyflow/react` v12)
-- **Drag & Drop:** `@dnd-kit/core`, `@dnd-kit/sortable`
-- **Animations:** Framer Motion v12
-- **Icons:** Lucide React
-- **Markdown:** react-markdown + remark-gfm
+## IDE & Agent Tools
 
-## Backend / Desktop Environment
-- **Framework:** Tauri v2 (Rust)
-- **PTY Management:** `tauri-pty` / `portable-pty`
-- **Plugins:** `plugin-shell`, `plugin-os`, `plugin-dialog`, `plugin-fs`, `plugin-opener`
-- **Security:** `keyring-rs` → OS Keychain (macOS Keychain, Windows Credential Manager, Linux Secret Service)
+| Aspekt | Technologie |
+|---|---|
+| IDE | Gemini Code Assist (Jules / Antigravity Agent) |
+| Agent Framework | NOUS Persona System 3.0 (21 Personas) |
+| Routing | Agentic Router v3.0 mit 7 Chains + 8 Mastertables |
+| Memory (Operativ) | `memory-bank/` (8 Dateien, Layer 0.5 Boot) |
+| Memory (Strategisch) | `architect-memory.md` (Decision Records) |
+| Memory (Semantisch) | Honcho MCP (Cloud) |
+| Config | `.antigravity/` Kit + `.agents/rules/` |
 
-## Integrations & Services
-- **Agent:** Hermes Agent (standalone CLI). Autarch bridges via stdio/ACP subprocess.
-- **Data Persistence:** 
-  - Workflows: `~/.autarch/workflows/*.json` (Tauri plugin-fs)
-  - Chat Sessions: localStorage (Zustand persist)
-  - API Keys: OS Keychain (keyring-rs via Tauri IPC)
-  - Workspace state: Local JSON
-- **Supabase:** Optional (Marketing pipeline connection). `@supabase/supabase-js` v2.103
+---
 
-## Workflow Engine
-- **Canvas:** React Flow with 3 custom node types (Trigger, Agent, Output)
-- **Gate System:** auto (pass-through), human (suspend + resume), agent-review (LLM criteria check)
-- **Execution:** Topological sorting (Kahn's algorithm) + Hermes persona execution
-- **Event Bus:** Type-safe discriminated union with 6 lifecycle events
-- **Reactive Bridge:** `useWorkflowExecution` hook → subscriptions → Zustand → node status rings
+## MCP-Server (Model Context Protocol)
 
-## Data Flow
-1. **Desktop Native APIs:** Tauri IPC handles file system, process spawning, keychain access
-2. **Editor & Terminal:** React wraps Monaco and xterm.js components
-3. **Hermes Integration:** Tauri spawns Hermes subprocess, bridges stdout/stdin
-4. **Workflow Execution:** Canvas → Store → hermesBridge.executeWorkflow() → EventBus → Store → Canvas re-render
+| Server | Port/Interface | Capabilities |
+|---|---|---|
+| **Antigravity Gateway** | Port 9090 (REST) | Context7 Library-Docs, PII Scrubber (DIRECTIVE-002) |
+| **Supabase** | `supabase-mcp-server` | DB Queries, Migrations, Edge Functions, Types, Advisors, Branches |
+| **GitHub** | `github-mcp-server` | Repos, PRs, Issues, Code Search, Branches, Releases, File Ops |
+| **Cloud Run** | `cloudrun` | Container Deploy, Service Mgmt, Logs, Project Creation |
+| **Stitch** | `StitchMCP` | UI Design Generation, Screen Creation, Variants, Editing |
+| **GitNexus** | `gitnexus mcp` (stdio) | Code Intelligence: Query, Impact, Context, Rename, Detect Changes |
+
+### Code Intelligence via GitNexus
+
+Alle managed Workspaces im ARES Kosmos (ares-app, ares-bio-os-dashboard, ares-website) sind via GitNexus indexiert.
+Das bedeutet du kannst (als NOUS oder als Persona) diese Befehle nutzen:
+- `gitnexus_query`: Finde Konzepte in der Codebase.
+- `gitnexus_impact`: Führe Impact Analysen durch vor (!) dem Code schreiben.
+- `gitnexus_detect_changes`: Verifiziere Scope vor einem Push.
+
+### Gateway Stack (In-Process Python, kein Docker)
+
+| Component | Provider | Model/Config |
+|-----------|----------|--------------|
+| LLM | Google Gemini | `gemini-2.5-flash` |
+| Embedder | Google Gemini | `gemini-embedding-2-preview` (768 dims) |
+| Memory | Honcho (Cloud) / File-based (Memory Bank) | `memory-bank/*.md` |
+| PII Scrubber | Regex | Email, Phone, CC, IBAN, SSN |
+| Context7 | npx | Library-Docs (3000 tokens) |
+| Autostart | macOS LaunchAgent | `com.antigravity.mcp-gateway` (RunAtLoad + KeepAlive) |
+
+---
+
+## Verwaltete Workspaces
+
+| Workspace | Tech Stack | Gateway | Relevante Personas |
+|---|---|---|---|
+| **ARES Bio.OS** | Next.js, Supabase, Capacitor, Vertex AI | Planned | Alle 21 |
+| **The Swarm** | Next.js, Supabase, AI Chat | ✅ Propagiert | Carmack, Rauno, Sherlock, Mr. Robot |
+| **NOUS Bridge** | Node.js, Discord.js, MCP | Planned | Nexus, Carmack, Mr. Robot |
+| **ARES Website** | Next.js, Vercel | Planned | Rauno, Draper, Jobs |
+
+---
+
+## Kit-System
+
+| Aspekt | Details |
+|---|---|
+| Personas | 21 (in `.antigravity/personas/`) |
+| Knowledge Files | 16 (in `.antigravity/knowledge/`) |
+| Workflows | 27+ (in `.antigravity/workflows/`) + `/start-gateway` |
+| Mastertables | 8 (architecture, frontend, engine, security, review, strategy, ai, content) |
+| Chains | 7 (Feature UI, Feature Backend, Hardening, Ship-Ready, Radical Simplification, Deep Work, Disciplined Build) |
+| Memory Bank | 8 Template-Dateien (in `memory-bank/`) |
+| MCP Gateway | Template in `scripts/mcp-gateway-template/` |
+
+---
+
+## Boot-Sequenz (Layer-Prinzip)
+
+```
+Layer 0    → Identität (NOUS = system-prompt + nous.md)
+Layer 0.5  → Working Memory (activeContext.md + progress.md)
+Layer 0.75 → Infrastructure (Gateway Health-Check → /start-gateway)
+Layer 1    → Regelwerk (copy-rules + tech-stack + agentic-router)
+Layer 2    → On-Demand (Personas, Knowledge, architect-memory)
+```
+
+---
+
+## Datenfluss
+
+```
+User Intent → NOUS (Layer 0) → Memory Bank (Layer 0.5)
+                                    ↓
+                          Gateway Check (Layer 0.75)
+                                    ↓
+                          Agentic Router → Persona/Chain/Mastertable
+                                    ↓
+                          MCP-Server (Gateway/Supabase/GitHub/CloudRun/Stitch)
+                                    ↓
+                          Workspace-spezifische Arbeit
+                                    ↓
+                          Quality Gate → /update-memory → Output
+```

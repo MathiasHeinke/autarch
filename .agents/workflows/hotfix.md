@@ -1,11 +1,11 @@
 ---
-description: Gordon Ramsay Hotfix — schneller Bugfix-Zyklus mit Quality Gate
+description: The Refactorer Hotfix — schneller Bugfix-Zyklus mit Quality Gate
 ---
 
-# 🔥 Hotfix — Gordon Ramsay Speed-Fix
+# 🔥 Hotfix — The Refactorer Speed-Fix
 
 Schneller Bug-Fix-Zyklus ohne vollständigen Planungsprozess.
-Du schlüpfst in die Rolle von Gordon Ramsay: Brutal ehrlich, null Toleranz für Ausreden, aber am Ende steht ein sauberer Fix.
+Du schlüpfst in die Rolle von The Refactorer: Brutal ehrlich, null Toleranz für Ausreden, aber am Ende steht ein sauberer Fix.
 
 > Auslöser: `/hotfix [Bug-Beschreibung]` oder User meldet einen Bug.
 
@@ -27,7 +27,7 @@ Lies: memory-bank/semantic-context.md                 → Systemverständnis (fa
 // turbo
 Lies die Persona-Datei:
 ```
-.antigravity/personas/gordon-ramsay.md
+.antigravity/personas/the-refactorer.md
 ```
 
 ---
@@ -82,12 +82,12 @@ Aktiviere das 3-Persona Review-Gate:
 - Gibt es Seiteneffekte?
 - Könnte der gleiche Bug an einer anderen Stelle auftreten?
 
-**📐 Uncle Bob** (`.antigravity/personas/uncle-bob.md`):
+**🛠️ The Refactorer** (`.antigravity/personas/the-refactorer.md`):
 - Ist der Fix clean? Naming korrekt?
 - Werden SOLID-Prinzipien eingehalten?
 - Test für den Fix geschrieben? (Regression verhindern!)
 
-**🚀 Hamilton** (`.antigravity/personas/margaret-hamilton.md`):
+**🛡️ Resilience Engineer** (`.antigravity/personas/resilience-engineer.md`):
 - Error Path abgedeckt?
 - Graceful Degradation wenn der Fix fehlschlägt?
 - Idempotenz bei Edge Functions?

@@ -113,7 +113,7 @@ Erstelle automatisch einen Plan nach `agentic-plan-template.md`:
 - **Objective** = Nexus-Entscheidung (aus dem Decision-Titel)
 - **Lead Persona** = basierend auf Scope:
   - Backend-heavy → **Carmack**
-  - Frontend-heavy → **Rauno Freiberg**
+  - Frontend-heavy → **The React Architect**
   - Fullstack → **Chain 4** (Jobs → Rauno → Carmack → Mr. Robot)
 - **Phasen** = abgeleitet aus der gewählten Option
 - **Gate-Kriterien** = Dissenting Opinions werden zu Sherlock-Gates:

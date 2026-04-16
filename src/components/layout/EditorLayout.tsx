@@ -1,53 +1,47 @@
 import { Panel, Group as PanelGroup, Separator as PanelResizeHandle } from 'react-resizable-panels';
-import { TopNav } from './TopNav';
-import { ContextPanel } from './ContextPanel';
-import { AuxPanel } from './AuxPanel';
-import { useLayoutStore } from '../../stores/layoutStore';
 import { FileExplorer } from '../views/FileExplorer';
 import { MonacoEditor } from '../views/MonacoEditor';
 import { Terminal } from '../views/Terminal';
 
+/**
+ * EditorLayout — The REAL IDE view.
+ *
+ * Layout:
+ *   Shell ContextPanel (LEFT)  — Navigation (Explorer, Search, Git, Chat)
+ *   EditorLayout (CENTER+RIGHT):
+ *     ├── Monaco Editor + Terminal (CENTER) — real code editing via Tauri FS
+ *     └── FileExplorer (RIGHT)              — real workspace file tree
+ */
 export function EditorLayout() {
-  const { auxPanelOpen, activeTab } = useLayoutStore();
-
   return (
-    <div className="flex flex-col h-screen overflow-hidden bg-[#0A0A0C] text-slate-200">
-      <TopNav />
-      
-      <div className="flex-1 overflow-hidden relative flex">
-        {/* IDE Layout */}
-        <PanelGroup orientation="horizontal">
-          {/* File Explorer */}
-          <Panel id="explorer" defaultSize={15} minSize={10} maxSize={30}>
-            <FileExplorer />
-          </Panel>
+    <div style={{ display: 'flex', flex: 1, height: '100%', width: '100%', overflow: 'hidden' }}>
+      <PanelGroup id="editor-layout-v4" orientation="horizontal">
+        {/* Editor + Terminal (CENTER) */}
+        <Panel id="editor-column-v4" defaultSize={75} minSize={40}>
+          <PanelGroup id="editor-terminal-v4" orientation="vertical">
+            <Panel id="code-v4" defaultSize={70} minSize={20}>
+              <MonacoEditor />
+            </Panel>
 
-          <PanelResizeHandle className="w-1 bg-white/5 hover:bg-emerald-500/50 transition-colors cursor-col-resize active:bg-emerald-500" />
+            <PanelResizeHandle
+              style={{ height: 6, background: 'rgba(255,255,255,0.04)', cursor: 'row-resize' }}
+            />
 
-          {/* Editor + Terminal */}
-          <Panel id="main-editor-area" defaultSize={85} minSize={50}>
-            <PanelGroup orientation="vertical">
-              {/* Monaco Editor */}
-              <Panel id="editor" defaultSize={70} minSize={30}>
-                <MonacoEditor />
-              </Panel>
+            <Panel id="term-v4" defaultSize={30} minSize={10}>
+              <Terminal />
+            </Panel>
+          </PanelGroup>
+        </Panel>
 
-              <PanelResizeHandle className="h-1 bg-white/5 hover:bg-emerald-500/50 transition-colors cursor-row-resize active:bg-emerald-500" />
+        <PanelResizeHandle
+          style={{ width: 6, background: 'rgba(255,255,255,0.04)', cursor: 'col-resize' }}
+        />
 
-              {/* Terminal */}
-              <Panel id="terminal" defaultSize={30} minSize={10}>
-                <Terminal />
-              </Panel>
-            </PanelGroup>
-          </Panel>
-        </PanelGroup>
-      </div>
-
-      <ContextPanel activeTab={activeTab} />
-      
-      {auxPanelOpen && (
-        <AuxPanel />
-      )}
+        {/* File Explorer (RIGHT) — real workspace file tree */}
+        <Panel id="files-v4" defaultSize={25} minSize={15} maxSize={45}>
+          <FileExplorer />
+        </Panel>
+      </PanelGroup>
     </div>
   );
 }

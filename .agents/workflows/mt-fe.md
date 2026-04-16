@@ -1,5 +1,5 @@
 ---
-description: 🎨 Frontend Sprint — Steve Jobs, Rauno, Dan Abramov, Don Draper, Kahneman, Cypher, Jonah
+description: 🎨 Frontend Sprint — Steve Jobs, Rauno, The React Architect, Don Draper, Kahneman, Cypher, Jonah
 ---
 
 # @mt-fe — Frontend Sprint
@@ -18,6 +18,6 @@ Lies: memory-bank/semantic-context.md (falls vorhanden)
 // turbo
 ```
 Lies: .antigravity/agentic-router.md → Sektion "🎨 MASTERTABLE: Frontend Sprint"
-Lade alle Personas am Tisch: Steve Jobs (Vorsitz), Rauno, Dan Abramov, Don Draper, Kahneman, Cypher, Jonah (optional)
+Lade alle Personas am Tisch: Steve Jobs (Vorsitz), Rauno, The React Architect, Don Draper, Kahneman, Cypher, Jonah (optional)
 Starte das Mastertable-Ablauf-Protokoll (5 Schritte): Briefing → Solo-Analyse → Konfrontation → Konklusion → User-Decision
 ```

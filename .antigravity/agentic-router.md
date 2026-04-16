@@ -32,22 +32,22 @@ User-Input → Native Memory Load → Intent Analysis → Routing → Arbeit →
 |---|---|---|
 | 🔍 Sherlock Holmes | `sherlock-holmes.md` | Bug, Fehler, Crash, Audit, Review, "Was fehlt?" |
 | 🖤 Steve Jobs | `steve-jobs.md` | Design, UI, UX, Layout, Animation, "Sieht aus" |
-| ⚛️ Rauno Freiberg | `rauno-freiberg.md` | Bauen, Komponente, React, Hook, Tailwind, CSS, Framer |
+| ⚛️ The React Architect | `react-architect.md` | Bauen, Komponente, React, Hook, Tailwind, CSS, Framer |
 | 🖥️ John Carmack | `john-carmack.md` | Backend, Edge Function, Supabase, DB, Engine, Algorithmus |
-| 👨‍🍳 Gordon Ramsay | `gordon-ramsay.md` | Refactor, Aufräumen, Spaghetti, DRY, Split, Modul |
+| 🛠️ The Refactorer | `the-refactorer.md` | Refactor, Aufräumen, Spaghetti, DRY, Split, Modul |
 | 🕶️ Mr. Robot | `mr-robot.md` | Sicherheit, Hack, RLS, Injection, Fallback |
 | 📡 Cypher SRE | `cypher-sre.md` | Performance, Langsam, Cache, Bundle, Optimierung |
 | 🥃 Don Draper | `don-draper.md` | Text, Copy, Marketing, Branding, Pitch, Wording |
 | 🧠 Andrej Karpathy | `andrej-karpathy.md` | Meta, Strategie, Big Picture, Swarm, Roadmap, Architektur-Review, Decision Record, Eval-Metrik |
 | 🚀 Elon Musk | `elon-musk.md` | Vereinfachen, Skalierung, "Brauchen wir das?", Contrarian, 10x, First Principles, Moonshot |
 | 🌌 The Nexus | `the-nexus.md` | AGI, LLM OS, RAG, Honcho Memory, Neuronale Netze, KI-Avatar, Multi-Agent |
-| 🚀 Margaret Hamilton | `margaret-hamilton.md` | Reliability, Failure Mode, Error Handling, Graceful Degradation, Idempotenz, Retry |
-| 📐 Uncle Bob | `uncle-bob.md` | Clean Code, SOLID, TDD, Tests, Refactoring, Architektur |
-| 🔒 DSGVO-Berater | `dsgvo-berater.md` | DSGVO, Datenschutz, Einwilligung, Art., PII, AV-Vertrag, Privacy |
-| 🩺 MVZ-Doctor | `mvz-doctor.md` | MDR, Medizinprodukt, Evidenz, klinisch, CE, Arzt, Gesundheit |
-| ⚛️ Dan Abramov | `dan-abramov.md` | State, useState, Context, Props, Re-Render, Hook, useEffect |
+| 🛡️ The Resilience Engineer | `resilience-engineer.md` | Reliability, Failure Mode, Error Handling, Graceful Degradation, Idempotenz, Retry |
+| 🛠️ The Refactorer | `the-refactorer.md` | Clean Code, SOLID, TDD, Tests, Refactoring, Architektur |
+| 🔒 Compliance Officer | `compliance-officer.md` | DSGVO, Datenschutz, Einwilligung, Art., PII, AV-Vertrag, Privacy |
+| 🩺 Compliance Officer | `compliance-officer.md` | MDR, Medizinprodukt, Evidenz, klinisch, CE, Arzt, Gesundheit |
+| ⚛️ The React Architect | `react-architect.md` | State, useState, Context, Props, Re-Render, Hook, useEffect |
 | 🧠 Daniel Kahneman | `daniel-kahneman.md` | Nudging, Bias, Verhalten, Engagement, Default, Framing, UX-Psychologie |
-| 🗡️ Nassim Taleb | `nassim-taleb.md` | Risiko, Antifragil, Resilient, Black Swan, Redundanz, Was-wenn, Skalierung |
+| 🗡️ The Resilience Engineer | `resilience-engineer.md` | Risiko, Antifragil, Resilient, Black Swan, Redundanz, Was-wenn, Skalierung |
 | 🧬 NOUS | `nous.md` | Orientierung, "Was als nächstes?", Routing, Priorisierung, Kontext, @nous |
 | 🎬 Jonah Jansen | `jonah-jansen.md` | Video, Remotion, Animation, Motion, Szene, Storyboard, Spring, Framer Motion, Pitch Deck Animation |
 | 🔬 Dr. Elara Voss | `elara-voss.md` | Studie, Evidenz, Hallmark, Intervention, Peptid, Biomarker, Longevity, Aging, NMN, Rapamycin, Metformin, Epigenetic Clock |
@@ -77,13 +77,13 @@ Wenn ein Task mehrere Domänen berührt, aktiviere die passende Chain. Jede Pers
 ### Chain 1: 🏗️ Feature-Build (UI/Frontend)
 
 ```
-🖤 Steve Jobs → ⚛️ Rauno Freiberg
+🖤 Steve Jobs → ⚛️ The React Architect
 ```
 
 | Phase | Persona | Liefert |
 |---|---|---|
 | Vision | 🖤 Steve Jobs | WAS und WARUM: Konzept, Layout-Entscheidung, Micro-Interaction-Ideen |
-| Exekution | ⚛️ Rauno Freiberg | WIE und CODE: Lauffähiger React/TS-Code, der die Vision umsetzt |
+| Exekution | ⚛️ The React Architect | WIE und CODE: Lauffähiger React/TS-Code, der die Vision umsetzt |
 
 **Trigger:** "Bau mir ein neues Widget/Component/Feature" (UI-bezogen)
 
@@ -103,26 +103,26 @@ Wenn ein Task mehrere Domänen berührt, aktiviere die passende Chain. Jede Pers
 ### Chain 3: 🔬 Hardening (Audit → Cleanup)
 
 ```
-🔍 Sherlock Holmes → 👨‍🍳 Gordon Ramsay
+🔍 Sherlock Holmes → 🛠️ The Refactorer
 ```
 
 | Phase | Persona | Liefert |
 |---|---|---|
 | Analyse | 🔍 Sherlock Holmes | Audit-Report: Bugs, Edge-Cases, Production-Readiness-Bewertung |
-| Bereinigung | 👨‍🍳 Gordon Ramsay | Refactoring-Plan mit konkreten Fixes für die gefundenen Issues |
+| Bereinigung | 🛠️ The Refactorer | Refactoring-Plan mit konkreten Fixes für die gefundenen Issues |
 
 **Trigger:** "Prüfe und räum auf", Review-Anfragen, Pre-Release-Checks
 
 ### Chain 4: 🚀 Ship-Ready (Fullstack Feature)
 
 ```
-🖤 Steve Jobs → ⚛️ Rauno Freiberg → 🖥️ John Carmack → 🕶️ Mr. Robot
+🖤 Steve Jobs → ⚛️ The React Architect → 🖥️ John Carmack → 🕶️ Mr. Robot
 ```
 
 | Phase | Persona | Liefert |
 |---|---|---|
 | Vision | 🖤 Steve Jobs | UX-Konzept, Constraint-Definition |
-| Frontend | ⚛️ Rauno Freiberg | UI-Code (React/TS/Framer Motion) |
+| Frontend | ⚛️ The React Architect | UI-Code (React/TS/Framer Motion) |
 | Backend | 🖥️ John Carmack | Edge Functions, DB, API-Logik |
 | Härtung | 🕶️ Mr. Robot | Security-Audit des Gesamtpakets |
 
@@ -131,18 +131,18 @@ Wenn ein Task mehrere Domänen berührt, aktiviere die passende Chain. Jede Pers
 ### Chain 5: 🚀 Radical Simplification (Deletion → Audit → Cleanup)
 
 ```
-🚀 Elon Musk → 🔍 Sherlock Holmes → 👨‍🍳 Gordon Ramsay
+🚀 Elon Musk → 🔍 Sherlock Holmes → 🛠️ The Refactorer
 ```
 
 | Phase | Persona | Liefert |
 |---|---|---|
 | Deletion-Analyse | 🚀 Elon Musk | 5-Schritte-Algorithmus: Was kann weg? Was kann gemerged werden? Latenz-Analyse. |
 | Validation | 🔍 Sherlock Holmes | Prüft Elon's Deletion-Vorschläge auf versteckte Dependencies und Seiteneffekte |
-| Execution | 👨‍🍳 Gordon Ramsay | Führt die validierten Deletions und Simplifications sauber durch |
+| Execution | 🛠️ The Refactorer | Führt die validierten Deletions und Simplifications sauber durch |
 
 **Trigger:** "Vereinfache", "Brauchen wir das?", "Skalierung", "Zu viele Edge Functions", "Pipeline eindampfen", "Latenz", "Konsolidieren"
 
-### Chain 6: 🏗️ Deep Work (Autonomous Multi-Phase Execution)
+### Chain 6: 🤖 Agentic Execute (Autonomous Multi-Phase Execute)
 
 ```
 [Lead-Persona] (Phase 1→N) → 🔍 Sherlock Holmes (Gate nach jeder Phase)
@@ -152,7 +152,7 @@ Wenn ein Task mehrere Domänen berührt, aktiviere die passende Chain. Jede Pers
 |---|---|---|
 | Execution | **Dynamisch (siehe unten)** | Code/Strategie/Design gemäß Plan (Phase für Phase) |
 | Audit-Gate | 🔍 Sherlock Holmes | Build-Check, Bug-Hunting, Edge-Case-Prüfung nach JEDER Phase |
-| Final | 🔍 Sherlock Holmes + 👨‍🍳 Gordon Ramsay | System-Audit + Wiki-Update + Bug-Hunting-Pass |
+| Final | 🔍 Sherlock Holmes + 🛠️ The Refactorer | System-Audit + Wiki-Update + Bug-Hunting-Pass |
 
 **Lead-Persona-Routing:**
 
@@ -161,13 +161,12 @@ Wenn ein Task mehrere Domänen berührt, aktiviere die passende Chain. Jede Pers
 | Backend/Engine/DB | 🖥️ John Carmack | Edge Functions, SQL, Engine-Logik |
 | Strategie/Architektur/Roadmap | 🧠 Andrej Karpathy | System-Design, Meta-Entscheidungen, Memory-Updates |
 | Deletion/Vereinfachung/Skalierung | 🚀 Elon Musk | Pipeline eindampfen, Dead Code, Consolidation |
-| UI/UX/Design-Sprint | 🖤 Steve Jobs (+ ⚛️ Rauno für Code) | Multi-Screen Feature, Design System |
-| Fullstack (UI + Backend) | ⚛️ Rauno + 🖥️ Carmack (alternierend) | End-to-End Features |
+| UI/UX/Design-Sprint | 🖤 Steve Jobs (+ ⚛️ React Architect für Code) | Multi-Screen Feature, Design System |
+| Fullstack (UI + Backend) | ⚛️ React Architect + 🖥️ Carmack (alternierend) | End-to-End Features |
 | **Deep Audit/Investigation** | **🔍 Sherlock Holmes** | **Multi-Phase Audit, komplexe Bug-Jagd, System-weite Code-Reviews** |
 
-**Trigger:** User gibt "Go" auf einen Plan mit ≥3 Phasen. Agent feuert autonom durch.
-**Plan-Template:** `.antigravity/agentic-plan-template.md`
-**Regel:** Kein User-Prompt zwischen Phasen. Sherlock-Gate ist autonom. Agent meldet sich erst nach Final Audit.
+**Trigger:** `/agentic-execute [Referenz zum Plan]` — Agent feuert autonom durch.
+**Regel:** Kein User-Prompt zwischen Phasen. Sherlock-Gate ist autonom. Nach Plan-Completion → automatisch `/deep-audit`.
 
 > [!IMPORTANT]
 > **Sherlock als Solo-Lead:** Bei Deep Audits ist Sherlock gleichzeitig Lead UND Gate. Er kann sich selbst nicht auditen — daher gilt: bei Sherlock-Solo-Deep-Work übernimmt **Carmack das Quality Gate** am Ende (Rollentausch).
@@ -179,25 +178,7 @@ Audit-[Fall-ID].md
 Beispiele: `Audit-DCG-Phase2.md`, `Audit-SleepEngine-v5.md`, `Audit-AgenticFramework.md`
 Alle Sherlock-Audits werden unter `docs/audits/` oder als Artifact gespeichert und in `architect-memory.md` referenziert.
 
-### Chain 7: 🏗️ Disciplined Build (Superpowers-inspiriert)
 
-```
-🧠 Karpathy (Brainstorm) → [Lead-Persona] (Plan + TDD) → 🔍 Sherlock (2-Stage Review) → 👨‍🍳 Gordon Ramsay (Cleanup)
-```
-
-| Phase | Persona | Liefert |
-|---|---|---|
-| Brainstorm | 🧠 Karpathy | Geklärte Spec in Chunks, User-Approval |
-| Plan + TDD | **Dynamisch** (Carmack/Rauno/Steve) | Implementation Plan + Red→Green→Refactor pro Funktion |
-| 2-Stage Review | 🔍 Sherlock | Stage 1: Spec Compliance / Stage 2: Code Quality |
-| Cleanup | 👨‍🍳 Gordon Ramsay | Dead Code, Duplikate, Wiki-Update |
-
-**Trigger:** `/disciplined-build [Feature]` — Voller 6-Phase Zyklus mit 0 Abkürzungen.
-**Workflow:** `.agents/workflows/disciplined-build.md`
-
-> [!TIP]
-> **Nexus → Decision → Build Pipeline:** Für große Architektur-Entscheidungen den Dreiklang nutzen:
-> `/nexus-strategy` → Decision Record (Karpathy) → `/disciplined-build` für die Umsetzung.
 
 ### Chain-Auswahl-Logik
 
@@ -207,11 +188,9 @@ Nur UI/Frontend?                         → Chain 1 (Feature-Build UI)
 Nur Backend/Edge Function/DB?            → Chain 2 (Feature-Build Backend)
 "Prüfe" / "Audit" / "Räum auf"?         → Chain 3 (Hardening)
 "Vereinfach" / "Skalier" / "10x"?       → Chain 5 (Radical Simplification)
-Multi-Phase Plan mit "Go"?               → Chain 6 (Deep Work — autonom)
-/disciplined-build?                      → Chain 7 (Disciplined Build — Superpowers)
+Plan ausführen / Execution / "Go"?       → Chain 6 (Agentic Execute — autonom)
 E2E Test / Deep Testing / QA?            → /deep-e2e (Autonomer E2E Systemtest)
-Full Quality Audit / Fortress / Harness? → /fortress-audit (E2E + Audit + Security + Hotfix)
-Plan erstellen / Agentic Plan / "Go"?    → /agentic-plan (Autonome Multi-Phase Execution)
+Plan erstellen / Agentic Plan / "Go"?    → /agentic-plan (Plan + Execute → Exit: /deep-audit)
 @mastertable:[name]?                     → Mastertable (Multi-Persona-Meeting)
 @team:dynamic "[Aufgabe]"?              → Dynamic Assembly (LLM stellt Team zusammen)
 Keins davon?                             → Solo-Route (Dispatch-Tabelle)
@@ -280,8 +259,8 @@ Keins davon?                             → Solo-Route (Dispatch-Tabelle)
 | Stuhl | Persona | Perspektive |
 |-------|---------|-------------|
 | 🪑 Vorsitz | 🖤 Steve Jobs | Vision, UX-Flow |
-| 🪑 | ⚛️ Rauno | Komponenten-Architektur, Pixel |
-| 🪑 | ⚛️ Dan Abramov | State Architecture, Hooks |
+| 🪑 | ⚛️ React Architect | Komponenten-Architektur, Pixel |
+| 🪑 | ⚛️ The React Architect | State Architecture, Hooks |
 | 🪑 | 🥃 Don Draper | Copy, Microcopy, Brand |
 | 🪑 | 🧠 Kahneman | Cognitive Biases, Nudging |
 | 🪑 | 📡 Cypher | Bundle Impact, Re-Renders |
@@ -293,10 +272,10 @@ Keins davon?                             → Solo-Route (Dispatch-Tabelle)
 |-------|---------|-------------|
 | 🪑 Vorsitz | 🖥️ Carmack | Algorithmus-Design, Performance |
 | 🪑 | 🧠 Karpathy | Wissenschaftliche Validität |
-| 🪑 | 🚀 Hamilton | Failure Modes, Graceful Degradation |
+| 🪑 | 🛡️ Resilience Engineer | Failure Modes, Graceful Degradation |
 | 🪑 | 🔍 Sherlock | Numerical Stability, Boundaries |
 | 🪑 | 🕶️ Mr. Robot | PII, RLS auf Ergebnis-Tabellen |
-| 🪑 | 🩺 MVZ-Doctor | MDR-Wording bei Gesundheits-Engines |
+| 🪑 | 🩺 Compliance Officer | MDR-Wording bei Gesundheits-Engines |
 
 ### 🛡️ MASTERTABLE: Security & Compliance
 **Trigger:** DSGVO-Review, MDR-Compliance, neuer Datenfluss zu externen Providern
@@ -304,8 +283,8 @@ Keins davon?                             → Solo-Route (Dispatch-Tabelle)
 | Stuhl | Persona | Perspektive |
 |-------|---------|-------------|
 | 🪑 Vorsitz | 🕶️ Mr. Robot | Angriffsvektoren, Pen Test |
-| 🪑 | 🔒 DSGVO-Berater | DSGVO-Compliance, Art. 9, DPIA |
-| 🪑 | 🩺 MVZ-Doctor | MDR-Klassifizierung, Wording |
+| 🪑 | 🔒 Compliance Officer | DSGVO-Compliance, Art. 9, DPIA |
+| 🪑 | 🩺 Compliance Officer | MDR-Klassifizierung, Wording |
 | 🪑 | 🔍 Sherlock | Code-Analyse, Race Conditions |
 | 🪑 | 🖥️ Carmack | Error Handling, Implementierung |
 | 🪑 | 🥃 Draper | Disclaimer, MDR-Wording |
@@ -317,9 +296,9 @@ Keins davon?                             → Solo-Route (Dispatch-Tabelle)
 |-------|---------|-------------|
 | 🪑 Vorsitz | 🔍 Sherlock | Deduktion, Bug-Reproduktion |
 | 🪑 | 🖥️ Carmack | Type Safety, Architecture |
-| 🪑 | 📐 Uncle Bob | SOLID, Clean Code, TDD |
-| 🪑 | 👨‍🍳 Ramsay | DRY, Spaghetti, Modularität |
-| 🪑 | 🚀 Hamilton | Reliability, Error Paths |
+| 🪑 | 🛠️ The Refactorer | SOLID, Clean Code, TDD |
+| 🪑 | 🛠️ Refactorer | DRY, Spaghetti, Modularität |
+| 🪑 | 🛡️ Resilience Engineer | Reliability, Error Paths |
 | 🪑 | 📡 Cypher | Performance-Regression |
 
 ### 🚀 MASTERTABLE: Strategy & Roadmap
@@ -344,15 +323,15 @@ Keins davon?                             → Solo-Route (Dispatch-Tabelle)
 | 🪑 | 🎬 Jonah Jansen | Video/Visual-Content, Motion, Storyboard |
 | 🪑 | 🖤 Steve Jobs | Marken-Ästhetik, Storytelling |
 | 🪑 | 🌌 The Nexus | AI-gestützte Content-Skalierung |
-| 🪑 Optional | 🩺 MVZ-Doctor | MDR-Wording bei Health-Content |
+| 🪑 Optional | 🩺 Compliance Officer | MDR-Wording bei Health-Content |
 
 ### 📈 MASTERTABLE: Marketing & Sales
 **Trigger:** Marketing-Plan, Social Media Strategy, Offers, Value Equation, Product Launches
 
 | Stuhl | Persona | Perspektive |
 |-------|---------|-------------|
-| 🪑 Vorsitz | Alex Hormozi | Offers, Value Equation, Pricing, Geschäftsmodell |
-| 🪑 | Gary Vaynerchuk | Attention, Social Media Strategy, Execution-Scale |
+| 🪑 Vorsitz | The Growth Engine | Offers, Value Equation, Pricing, Geschäftsmodell |
+| 🪑 | The Growth Engine | Attention, Social Media Strategy, Execution-Scale |
 | 🪑 | 🥃 Don Draper | Brand Voice, High-End Copywriting, Hooks |
 | 🪑 | 🖤 Steve Jobs | Vision, Product Marketing, Launch-Hype |
 | 🪑 | 🧠 Kahneman | Conversion Rate Psychologie, Bias, Nudging |
@@ -367,7 +346,7 @@ Keins davon?                             → Solo-Route (Dispatch-Tabelle)
 | 🪑 | 🧠 Karpathy | Wissenschaftliche Validierung, Eval-Metriken |
 | 🪑 | 📡 Cypher | Token-Kosten, Latenz-Budget, Caching |
 | 🪑 | 🕶️ Mr. Robot | PII bei AI-Provider-Calls, Data Leakage |
-| 🪑 Optional | 🔒 DSGVO-Berater | DSGVO bei AI-Training, Art. 22 (Profiling) |
+| 🪑 Optional | 🔒 Compliance Officer | DSGVO bei AI-Training, Art. 22 (Profiling) |
 
 ### 🤖 Dynamic Assembly (`@team:dynamic`)
 
@@ -465,7 +444,7 @@ Der Router entscheidet, ob zusätzliche Docs geladen werden:
 | `docs/ARCHITECTURE.md` | Backend, Engine, DB, Edge Functions |
 | `docs/DEVELOPER_SETUP.md` | Build, Deploy, Capacitor, iOS, Xcode |
 | `.antigravity/logs/architect-memory.md` | **IMMER** wenn Andrej Karpathy aktiv. Layer 2 Directives bei **JEDER** Persona. |
-| `.antigravity/agentic-plan-template.md` | **Bei jeder Plan-Erstellung** (≥3 Dateien betroffen). |
+| `.agents/workflows/agentic-plan.md` | **Bei Plan-Erstellung** — Template ist inline im Workflow. |
 | `e2e-master-plan.md` | **Bei E2E-Testing**, Deep-Test-Fortführung, QA-Kontext. |
 | `memory-bank/e2e-snapshots/_harness-index.md` | **Bei Fortress-Audit**, Harness-Kontext, Trend-Vergleich. |
 | `knowledge/backend-mastery.md` | Backend, Edge Functions, DB, Engine |

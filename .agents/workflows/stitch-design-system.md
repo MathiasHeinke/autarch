@@ -13,7 +13,7 @@ description: Stitch Design System Workflow — Von 0 zur DESIGN.md in 6 Schritte
 
 - StitchMCP Server ist aktiv und verbunden
 - Steve Jobs Persona ist für Vision/UX aktiviert  
-- Rauno Freiberg Persona ist für Code-Exekution bereit
+- The React Architect Persona ist für Code-Exekution bereit
 - Das Projekt hat eine klare Produkt-Vision (Paradigma, User-Rolle, North Star)
 
 ---

@@ -129,9 +129,11 @@ export type HermesEventType = HermesEvent['type'];
 
 type EventHandler<K extends HermesEventType> = (event: Extract<HermesEvent, { type: K }>) => void;
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- heterogeneous handler set per event type
+type AnyEventHandler = (event: any) => void;
+
 class EventBus {
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-function-type
-  private listeners: Map<HermesEventType, Set<Function>> = new Map();
+  private listeners: Map<HermesEventType, Set<AnyEventHandler>> = new Map();
 
   /**
    * Subscribe to specific events. Returns a cleanup function.
@@ -144,10 +146,10 @@ class EventBus {
       this.listeners.set(type, new Set());
     }
     
-    this.listeners.get(type)!.add(handler);
+    this.listeners.get(type)!.add(handler as AnyEventHandler);
 
     return () => {
-      this.listeners.get(type)?.delete(handler);
+      this.listeners.get(type)?.delete(handler as AnyEventHandler);
     };
   }
 

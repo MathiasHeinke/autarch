@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { readDir, readTextFile, writeTextFile } from '@tauri-apps/plugin-fs';
+import { readDir, readTextFile, writeTextFile, mkdir, remove } from '@tauri-apps/plugin-fs';
 import { open } from '@tauri-apps/plugin-dialog';
 export interface FileNode {
   name: string;
@@ -23,6 +23,9 @@ interface EditorState {
   closeFile: (path: string) => void;
   updateFileContent: (path: string, content: string) => void;
   saveFile: (path: string) => Promise<void>;
+  createFile: (path: string) => Promise<void>;
+  createDirectory: (path: string) => Promise<void>;
+  deleteEntry: (path: string) => Promise<void>;
 }
 
 async function buildFileTree(path: string, name: string): Promise<FileNode> {
@@ -112,6 +115,33 @@ export const useEditorStore = create<EditorState>((set, get) => ({
       } catch (err) {
         console.error('Failed to save file:', err);
       }
+    }
+  },
+
+  createFile: async (path) => {
+    try {
+      await writeTextFile(path, '');
+      await get().refreshWorkspace();
+    } catch (err) {
+      console.error('Failed to create file:', err);
+    }
+  },
+
+  createDirectory: async (path) => {
+    try {
+      await mkdir(path);
+      await get().refreshWorkspace();
+    } catch (err) {
+      console.error('Failed to create dir:', err);
+    }
+  },
+
+  deleteEntry: async (path) => {
+    try {
+      await remove(path, { recursive: true });
+      await get().refreshWorkspace();
+    } catch (err) {
+      console.error('Failed to delete:', err);
     }
   }
 }));

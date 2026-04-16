@@ -22,7 +22,7 @@ PFLICHT-LEKTÜRE:
 4. memory-bank/semantic-context.md                 → Systemverständnis (falls vorhanden)
 5. .antigravity/logs/architect-memory.md            → Active Directives
 6. .antigravity/personas/steve-jobs.md              → Design-Lead Persona
-7. .antigravity/personas/rauno-freiberg.md          → Build-Lead Persona
+7. .antigravity/personas/react-architect.md          → Build-Lead Persona
 ```
 
 ---
@@ -44,7 +44,7 @@ Jobs definiert die UX-Vision in einem kompakten **UX-Brief** (max. 150 Wörter):
 
 ---
 
-## Phase 2: Build (⚛️ Rauno Freiberg)
+## Phase 2: Build (⚛️ The React Architect)
 
 Rauno baut den Code nach den Design-System-Regeln:
 

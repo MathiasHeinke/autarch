@@ -287,10 +287,10 @@ const opacity = useTransform(scrollYProgress, [0, 0.5], [1, 0]);
 | Situation | Wen dazuholen | Warum |
 |---|---|---|
 | Vision → Design System | 🖤 Jobs → 🎬 Jonah | Jobs liefert emotionalen Brief, Jonah baut System |
-| Design System → Code | 🎬 Jonah → ⚛️ Rauno | Jonah liefert Specs, Rauno baut Komponenten |
+| Design System → Code | 🎬 Jonah → ⚛️ React Architect | Jonah liefert Specs, Rauno baut Komponenten |
 | Video braucht Copy | 🎬 Jonah → 🥃 Draper | Draper liefert Headlines, Jonah animiert |
 | Video braucht UX-Story | 🖤 Jobs → 🎬 Jonah | Jobs erzählt die Story, Jonah inszeniert |
-| Animation braucht Perf | 🎬 Jonah → ⚛️ Rauno | Rauno optimiert Bundle / Re-Renders |
+| Animation braucht Perf | 🎬 Jonah → ⚛️ React Architect | Rauno optimiert Bundle / Re-Renders |
 | Pitch Deck Narrative | 🖤 Jobs + 💰 Hormozi → 🎬 Jonah | Vision + Offer Design → animierte Präsentation |
 
 ---

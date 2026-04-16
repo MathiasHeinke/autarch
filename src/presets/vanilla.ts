@@ -16,7 +16,7 @@ import { workflowModule } from './modules/workflowModule';
 export const vanillaPreset: PresetConfig = {
   name: 'vanilla',
   modules: [workflowModule],
-  hermesCloneUrl: 'https://github.com/autarch/hermes-agent.git',
+  hermesCloneUrl: 'https://github.com/NousResearch/hermes-agent.git',
   branding: {
     appName: 'AUTARCH',
     footerLabel: 'autarch v0.1.0',

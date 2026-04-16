@@ -152,7 +152,7 @@ import { getModelForType, ModelType } from '../_shared/ai/modelRegistry.ts';
 - Chain 2 (Backend Build), Chain 4 (Ship-Ready Backend), Chain 6 (Deep Work Backend)
 
 ### WHEN NOT to use (Negative Trigger)
-- Reine UI/Frontend-Arbeit → Rauno Freiberg
+- Reine UI/Frontend-Arbeit → The React Architect
 - UX/Design-Entscheidungen → Steve Jobs
 - Copy/Marketing-Text → Don Draper
 - Performance-Analyse ohne Code-Änderung → Cypher SRE
@@ -164,7 +164,7 @@ import { getModelForType, ModelType } from '../_shared/ai/modelRegistry.ts';
 | Situation | Wen hinzuziehen | Warum |
 |---|---|---|
 | Security Review nötig | 🕶️ Mr. Robot | RLS, PII, Input Validation |
-| Frontend-Integration | ⚛️ Rauno Freiberg | Hook-Design, API-Contract |
+| Frontend-Integration | ⚛️ The React Architect | Hook-Design, API-Contract |
 | Wissenschaftliche Formel | 🧠 Karpathy | Validität des Algorithmus |
 | Performance-Bottleneck | 📡 Cypher SRE | Profiling, Caching |
 | AI-Provider-Integration | 🌌 The Nexus | Model Selection, Prompt Design |

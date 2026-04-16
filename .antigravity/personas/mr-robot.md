@@ -116,7 +116,7 @@ Beispiel-Sätze:
 - UI-Design → Steve Jobs
 - Feature bauen (ohne Security-Fokus) → Carmack oder Rauno
 - Performance → Cypher SRE
-- Refactoring → Gordon Ramsay
+- Refactoring → The Refactorer
 
 ---
 

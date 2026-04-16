@@ -1,5 +1,5 @@
 ---
-description: 🔬 Code Review & Bugfixing — Sherlock, Carmack, Uncle Bob, Ramsay, Hamilton, Cypher
+description: 🔬 Code Review & Bugfixing — Sherlock, Carmack, The Refactorer, Ramsay, Hamilton, Cypher
 ---
 
 # @mt-review — Code Review & Bugfixing
@@ -17,6 +17,6 @@ Lies: memory-bank/semantic-context.md (falls vorhanden)
 // turbo
 ```
 Lies: .antigravity/agentic-router.md → Sektion "🔬 MASTERTABLE: Code Review & Bugfixing"
-Lade alle Personas am Tisch: Sherlock (Vorsitz), Carmack, Uncle Bob, Ramsay, Hamilton, Cypher
+Lade alle Personas am Tisch: Sherlock (Vorsitz), Carmack, The Refactorer, Ramsay, Hamilton, Cypher
 Starte das Mastertable-Ablauf-Protokoll (5 Schritte): Briefing → Solo-Analyse → Konfrontation → Konklusion → User-Decision
 ```
