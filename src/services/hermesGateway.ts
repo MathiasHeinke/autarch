@@ -80,11 +80,11 @@ export async function startGateway(): Promise<boolean> {
   }
 
   // Find hermes binary location
-  const whichResult = await execShell('sh', ['-c', 'which hermes 2>/dev/null || echo ""']);
+  const whichResult = await execShell('sh', ['-c', 'which hermes 2>/dev/null || if [ -f "$HOME/.hermes/bin/hermes" ]; then echo "$HOME/.hermes/bin/hermes"; else echo ""; fi']);
   const hermesBin = whichResult.stdout.trim();
 
   if (!hermesBin) {
-    console.warn('[HermesGateway] hermes binary not found in PATH');
+    console.warn('[HermesGateway] hermes binary not found in PATH or ~/.hermes/bin');
     return false;
   }
 

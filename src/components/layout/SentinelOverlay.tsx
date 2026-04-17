@@ -2,6 +2,7 @@ import { motion, type Variants } from 'framer-motion';
 import { TopNav } from './TopNav';
 import { ContextPanel } from './ContextPanel';
 import { AuxPanel } from './AuxPanel';
+import { CommandPalette } from './CommandPalette';
 import { useLayoutStore } from '../../stores/layoutStore';
 
 interface ShellProps {
@@ -98,6 +99,9 @@ export function Shell({ children }: ShellProps) {
         <div className="flex-1" />
         <span className="label-tag">rust 1.94 · react 19 · tauri 2</span>
       </motion.footer>
+
+      {/* Global Command Palette — floats above everything */}
+      <CommandPalette />
     </motion.div>
   );
 }

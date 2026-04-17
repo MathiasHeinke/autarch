@@ -85,6 +85,22 @@ export function MonacoEditor() {
     ed.onMouseDown(() => {
       setOverlayState(null);
     });
+
+    // Listen for search result reveal-line events
+    const handleRevealLine = (e: Event) => {
+      const detail = (e as CustomEvent<{ line: number }>).detail;
+      if (detail?.line) {
+        ed.revealLineInCenter(detail.line);
+        ed.setPosition({ lineNumber: detail.line, column: 1 });
+        ed.focus();
+      }
+    };
+    window.addEventListener('autarch:reveal-line', handleRevealLine);
+
+    // Store cleanup ref
+    (ed as any).__autarchRevealCleanup = () => {
+      window.removeEventListener('autarch:reveal-line', handleRevealLine);
+    };
   };
 
   const applyEdit = (newText: string) => {

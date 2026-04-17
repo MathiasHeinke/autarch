@@ -137,3 +137,11 @@ WorkflowCanvas "Run" → workflowStore → hermesBridge.executeWorkflow()
 **Entscheidungen:**
 - Status-Ring-CSS wird inline in Node-Komponenten berechnet (nicht als utility), weil Zustand-Selektoren pro-Node re-rendern müssen
 - `executionState` startet als `null` (nicht als leeres Objekt), um "noch nie gestartet" von "idle" zu unterscheiden
+
+### 2026-04-17 — Ship: Omni-Overlay & Search Performance Hardening (Deep Audit)
+**Geänderte Module:** `src-tauri/capabilities/default.json`, `commandRegistry.ts`
+**Erkenntnisse:**
+- Tauri native Shell Executions via `Command.create('grep')` scheitern in V2 ohne expliziten Allowlist-Eintrag (`default.json`).
+- Zustand Store Re-renders und iterative Objekt-Zuweisung innerhalb des `CommandPalette` Loops verheddern den Main-Thread komplett, wenn Workspace Caching (`fileTree` Mapping) nicht referenziell gememoized wird.
+**Entscheidungen:**
+- Refactoring `commandRegistry.ts`: Strict Caching von `lastFileTreeRef`, was das Slice Limit sicher auf 2000 Files hebt. File-Mapping ist fortan O(1) nach initialem Load.

@@ -26,7 +26,8 @@
         { "name": "sh", "cmd": "sh", "args": true },
         { "name": "brew", "cmd": "brew", "args": true },
         { "name": "git", "cmd": "git", "args": true },
-        { "name": "shasum", "cmd": "shasum", "args": true }
+        { "name": "shasum", "cmd": "shasum", "args": true },
+        { "name": "grep", "cmd": "grep", "args": true }
       ]
     },
     "shell:allow-spawn",

@@ -2,8 +2,8 @@ import { useEffect, useRef, useState } from 'react';
 import { Terminal as XTerm } from '@xterm/xterm';
 import { FitAddon } from '@xterm/addon-fit';
 import '@xterm/xterm/css/xterm.css';
-import { TerminalSquare, AlertCircle, FileOutput, Plus, Trash2, SplitSquareHorizontal, MoreHorizontal, Maximize2 } from 'lucide-react';
-import { useTerminalStore } from '../../stores/terminalStore';
+import { TerminalSquare, AlertCircle, FileOutput, Plus, Trash2, SplitSquareHorizontal, MoreHorizontal, Maximize2, X } from 'lucide-react';
+import { useTerminalStore, clearTerminalOutput, killAndRestartPty } from '../../stores/terminalStore';
 import clsx from 'clsx';
 
 type BottomTab = 'problems' | 'output' | 'terminal';
@@ -13,9 +13,22 @@ export function Terminal() {
   const [activeTab, setActiveTab] = useState<BottomTab>('terminal');
   const [termState, setTermState] = useState<'running' | 'exited'>('running');
 
+  const tabs = useTerminalStore(state => state.tabs);
+  const activeTabId = useTerminalStore(state => state.activeTabId);
+  const createTab = useTerminalStore(state => state.createTab);
+  const setActiveTabId = useTerminalStore(state => state.setActiveTabId);
+  const closeTab = useTerminalStore(state => state.closeTab);
+
+  // Initialize at least one tab on mount if it's empty
   useEffect(() => {
-    // Only init xterm if we are actually rendering the terminal tab
-    if (activeTab !== 'terminal' || !terminalRef.current) return;
+    if (tabs.length === 0) {
+      createTab();
+    }
+  }, [tabs.length, createTab]);
+
+  useEffect(() => {
+    // Only init xterm if we are actually rendering the terminal tab and have an active session
+    if (activeTab !== 'terminal' || !terminalRef.current || !activeTabId) return;
 
     let cancelled = false;
 
@@ -30,7 +43,7 @@ export function Terminal() {
       fontSize: 13,
       cursorBlink: true,
       scrollback: 5000,
-      convertEol: true, // helps with \n vs \r\n formatting
+      convertEol: true,
     });
 
     const fitAddon = new FitAddon();
@@ -39,22 +52,24 @@ export function Terminal() {
     term.open(terminalRef.current);
     fitAddon.fit();
 
+    let cleanupSub: (() => void) | null = null;
+
     async function initTerminal() {
       if (cancelled) return;
       
       const {
-        initGlobalPty,
+        initPty,
         subscribeToPty,
         getPtyBuffer,
-        resizeGlobalPty,
+        resizePty,
       } = await import('../../stores/terminalStore');
 
-      await initGlobalPty();
+      await initPty(activeTabId!);
       if (cancelled) return;
       setTermState('running');
 
       // Replay existing output buffer
-      for (const chunk of getPtyBuffer()) {
+      for (const chunk of getPtyBuffer(activeTabId!)) {
         term.write(chunk);
       }
 
@@ -62,33 +77,30 @@ export function Terminal() {
       requestAnimationFrame(() => fitAddon.fit());
 
       // Subscribe to live output
-      const unsubscribe = subscribeToPty((data) => {
+      const unsubscribe = subscribeToPty(activeTabId!, (data) => {
         term.write(data);
       });
 
-      // Forward keyboard input to global PTY
+      // Forward keyboard input to the active PTY
       term.onData((data) => {
         const store = useTerminalStore.getState();
         if (store.shellReady && store.ptyWriteFn) {
-           // Normal writing
            store.ptyWriteFn(data);
         } else if (!store.shellReady) {
-           // Restart mechanism
            setTermState('running');
            term.writeln('\x1b[1;36m↻ Restarting shell...\x1b[0m\r\n');
-           initGlobalPty();
+           initPty(activeTabId!);
         }
       });
 
       // Synchronize resizes
       term.onResize(({ cols, rows }) => {
-        resizeGlobalPty(cols, rows);
+        resizePty(activeTabId!, cols, rows);
       });
 
       cleanupSub = unsubscribe;
     }
 
-    let cleanupSub: (() => void) | null = null;
     initTerminal();
 
     const handleResize = () => {
@@ -114,7 +126,7 @@ export function Terminal() {
       if (cleanupSub) cleanupSub();
       term.dispose();
     };
-  }, [activeTab]);
+  }, [activeTab, activeTabId]);
 
   return (
     <div className="flex flex-col h-full bg-[#09090B] w-full text-sm">
@@ -165,24 +177,38 @@ export function Terminal() {
                 <span className="text-emerald-500">{'>_'}</span> zsh {termState === 'exited' && '⚠️'}
               </span>
             </div>
-            <button className="p-1 rounded hover:bg-white/10 text-slate-400 hover:text-slate-100 transition-colors" title="New Terminal">
+            <button onClick={() => { createTab(); }} className="p-1 rounded hover:bg-white/10 text-slate-400 hover:text-slate-100 transition-colors" title="New Terminal">
               <Plus size={14} />
             </button>
-            <button className="p-1 rounded hover:bg-white/10 text-slate-400 hover:text-slate-100 transition-colors" title="Split Terminal">
+            <button onClick={() => window.alert('Terminal splitting coming soon!')} className="p-1 rounded hover:bg-white/10 text-slate-400 hover:text-slate-100 transition-colors" title="Split Terminal">
               <SplitSquareHorizontal size={14} />
+            </button>
+            <button 
+              className="p-1 rounded hover:bg-white/10 text-slate-400 hover:text-amber-400 transition-colors" 
+              title="Clear Terminal"
+              onClick={() => {
+                if (activeTabId) clearTerminalOutput(activeTabId);
+              }}
+            >
+              <Trash2 size={14} />
             </button>
             <button 
               className="p-1 rounded hover:bg-white/10 text-slate-400 hover:text-rose-400 transition-colors" 
               title="Kill Terminal"
-              onClick={() => setTermState('exited')}
+              onClick={() => {
+                if (!activeTabId) return;
+                setTermState('exited');
+                killAndRestartPty(activeTabId);
+              }}
             >
-              <Trash2 size={14} />
+              <Trash2 size={14} className="hidden" /> {/* keeping the original class list struct for spacing parity */}
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line></svg>
             </button>
             <div className="w-[1px] h-3 bg-white/10 mx-1" />
-            <button className="p-1 rounded hover:bg-white/10 text-slate-400 hover:text-slate-100 transition-colors" title="More Actions">
+            <button onClick={() => window.alert('More Actions coming soon')} className="p-1 rounded hover:bg-white/10 text-slate-400 hover:text-slate-100 transition-colors" title="More Actions">
               <MoreHorizontal size={14} />
             </button>
-            <button className="p-1 rounded hover:bg-white/10 text-slate-400 hover:text-slate-100 transition-colors" title="Maximize Panel">
+            <button onClick={() => window.alert('Panel sizing coming soon')} className="p-1 rounded hover:bg-white/10 text-slate-400 hover:text-slate-100 transition-colors" title="Maximize Panel">
               <Maximize2 size={14} />
             </button>
           </div>
@@ -192,7 +218,36 @@ export function Terminal() {
       {/* Tab Content Area */}
       <div className="flex-1 overflow-hidden relative">
         {activeTab === 'terminal' && (
-          <div className="absolute inset-0 p-2" ref={terminalRef} />
+          <div className="absolute inset-0 flex">
+            {/* Terminal Window */}
+            <div className="flex-1 p-2" ref={terminalRef} />
+            
+            {/* Terminal Tabs Sidebar */}
+            <div className="w-[160px] border-l border-white/10 bg-[#0e0e11] flex flex-col py-2 px-1 gap-1 shrink-0 overflow-y-auto">
+              {tabs.map((tab, idx) => (
+                <div 
+                  key={tab.id}
+                  onClick={() => setActiveTabId(tab.id)}
+                  className={clsx(
+                    "group flex items-center justify-between px-2 py-1.5 rounded text-xs cursor-pointer transition-colors",
+                    activeTabId === tab.id ? "bg-white/10 text-emerald-400 font-medium" : "text-slate-400 hover:bg-white/5 hover:text-slate-200"
+                  )}
+                >
+                  <span className="flex items-center gap-2 truncate">
+                    <TerminalSquare size={13} className={activeTabId === tab.id ? "text-emerald-500" : "text-slate-500"} />
+                    {tab.title} {idx + 1}
+                  </span>
+                  <button 
+                    onClick={(e) => { e.stopPropagation(); closeTab(tab.id); }}
+                    className="opacity-0 group-hover:opacity-100 hover:text-rose-400 transition-opacity p-0.5 rounded hover:bg-white/10"
+                    title="Close session"
+                  >
+                    <X size={12} />
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
         )}
         
         {activeTab === 'problems' && (

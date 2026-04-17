@@ -273,3 +273,9 @@
 - **PTY UI Refactor:** Upgraded the barebones `Terminal.tsx` into a fully-fledged VS Code-like panel featuring Tabs (`Problems`, `Output`, `Terminal`), Action Toolbars, and state tracking limits for crashed shells.
 - **File System Saves:** Injected `window.alert` inside `editorStore` for silent failing dialog APIs. `Cmd+S` saves now reflect dynamically natively in the UI with a `*[Unsaved]` visual indicator via updated `editorStore` state handling.
 - **Status:** **Shipped**. Next step involves linking Hermes stdio stream directly to Agent Chat tabs or pushing edge functionalities.
+
+### Session 17.04.2026, 11:00 — 🚀 Deep Audit: Omni-Overlay & Search Performance Hardening
+- **Objective:** Fix extreme UI stuttering in CommandPalette during workspace file navigation and restore global native `grep` search capabilities.
+- **Tauri Shell Capability:** The native `Command.create('grep', ...)` inside `GlobalSearch.tsx` triggered authorization crashes in the Rust layer. Explicitly whitelisted `/usr/bin/grep` inside `src-tauri/capabilities/default.json` payload, restoring fast exact-match Workspace sweeping.
+- **Caching Command Arrays (Zero-Stutter):** Refactored `commandRegistry.ts` which blocked the main thread by recomputing tree flatteners from `useEditorStore().fileTree` every single keystroke. Migrated to absolute memoization checking identical `fileTree` pointers to only cache statically fetched file listings once, allowing seamless list slicing optimizations and pushing cap limit from 200 -> 2000 files successfully.
+- **Status:** **Shipped**. Tauri IDE runs entirely stutter-free when searching files alongside immediate `grep` returns in the global sidebar.

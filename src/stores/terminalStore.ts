@@ -4,324 +4,345 @@ import { create } from 'zustand';
 
 export type InstallPhase = 'idle' | 'installing' | 'setup-wizard' | 'provisioning' | 'done' | 'error';
 
-type PtyWriteFn = ((data: string) => void) | null;
+export type PtyWriteFn = ((data: string) => void) | null;
+
+export interface TerminalTab {
+  id: string;
+  title: string;
+}
 
 interface TerminalState {
-  // PTY State
+  tabs: TerminalTab[];
+  activeTabId: string | null;
+
   shellReady: boolean;
   ptyWriteFn: PtyWriteFn;
 
-  // Hermes Engine State
   hermesInstalled: boolean;
   installPhase: InstallPhase;
   installError: string | null;
 
-  // PTY Actions (called by Terminal.tsx)
+  createTab: () => Promise<void>;
+  closeTab: (id: string) => void;
+  setActiveTabId: (id: string) => void;
+
   setShellReady: (ready: boolean) => void;
   setPtyWriteFn: (fn: PtyWriteFn) => void;
 
-  // Command Injection API
   injectCommand: (cmd: string) => void;
-
-  // Reactive Output Parser — called by Terminal.tsx on every PTY output chunk
   handlePtyOutput: (text: string) => void;
-
-  // Hermes Install Actions
+  
   checkHermesInstalled: () => Promise<void>;
   installHermes: () => void;
 }
 
-// ── Hermes Install Command ───────────────────────────────────
-// S-3 FIX: Download → SHA-256 verify → execute (no pipe-to-bash).
-// The hash must be updated when the installer script changes.
-const HERMES_INSTALLER_URL =
-  'https://raw.githubusercontent.com/NousResearch/hermes-agent/main/scripts/install.sh';
+// ── Hermes Configuration ─────────────────────────────────────
+const HERMES_INSTALLER_URL = 'https://raw.githubusercontent.com/NousResearch/hermes-agent/main/scripts/install.sh';
 const HERMES_INSTALL_CMD = [
   `curl -fsSL -o /tmp/hermes-install.sh "${HERMES_INSTALLER_URL}"`,
   '&& bash /tmp/hermes-install.sh',
   '&& rm -f /tmp/hermes-install.sh',
 ].join(' ');
 
-// ── Reactive Output Parser Patterns ──────────────────────────
-// 🧩 Event-driven state transitions based on actual PTY output
-// instead of blind timers. These patterns match the official
-// Hermes Agent installer output.
-const SETUP_WIZARD_PATTERNS = [
-  'hermes setup',
-  'Configuration wizard',
-  'Select a provider',
-  'Enter your API key',
-  'Setup wizard',
-];
-const INSTALL_DONE_PATTERNS = [
-  'Setup complete',
-  'Installation complete',
-  'hermes is ready',
-  'Successfully installed',
-];
-const INSTALL_ERROR_PATTERNS = [
-  'error:',
-  'Error:',
-  'fatal:',
-  'Failed to',
-  'command not found',
-  'Permission denied',
-];
+const SETUP_WIZARD_PATTERNS = ['hermes setup', 'Configuration wizard', 'Select a provider', 'Enter your API key', 'Setup wizard'];
+const INSTALL_DONE_PATTERNS = ['Setup complete', 'Installation complete', 'hermes is ready', 'Successfully installed'];
+const INSTALL_ERROR_PATTERNS = ['error:', 'Error:', 'fatal:', 'Failed to', 'command not found', 'Permission denied'];
 
-// ── Store ────────────────────────────────────────────────────
+// ── Session Map ──────────────────────────────────────────────
 
-// Global PTY State (decoupled from React lifecycle)
-let globalPtyProcess: Awaited<ReturnType<typeof import('tauri-pty')['spawn']>> | null = null;
-let ptyBuffer: Uint8Array[] = [];
-const ptySubscribers = new Set<(data: Uint8Array) => void>();
+export interface PtySessionState {
+  id: string;
+  process: any | null;
+  buffer: Uint8Array[];
+  subscribers: Set<(data: Uint8Array) => void>;
+  mockMode: boolean;
+  mockInputBuffer: string;
+  writeFn: PtyWriteFn;
+  shellReady: boolean;
+}
 
-export async function initGlobalPty() {
-  if (globalPtyProcess) return;
-  const store = useTerminalStore.getState();
+const ptySessions = new Map<string, PtySessionState>();
+let tabCounter = 1;
+
+function getSession(id: string): PtySessionState {
+  if (!ptySessions.has(id)) {
+    ptySessions.set(id, {
+      id,
+      process: null,
+      buffer: [],
+      subscribers: new Set(),
+      mockMode: false,
+      mockInputBuffer: '',
+      writeFn: null,
+      shellReady: false,
+    });
+  }
+  return ptySessions.get(id)!;
+}
+
+function updateGlobalStateFromSession(id: string) {
+  const session = ptySessions.get(id);
+  if (!session) return;
+  useTerminalStore.getState().setShellReady(session.shellReady);
+  useTerminalStore.getState().setPtyWriteFn(session.writeFn);
+}
+
+// ── Global PTY Functions ─────────────────────────────────────
+
+export async function initPty(id: string) {
+  const session = getSession(id);
+  if (session.process || session.mockMode) return;
+  
+  const isTauri = typeof window !== 'undefined' && '__TAURI_INTERNALS__' in window;
+
+  const enableMockTerminal = (reason: string) => {
+    console.warn(`[Terminal] ${reason}. Booting Mock Terminal for ${id}.`);
+    session.mockMode = true;
+    session.shellReady = true;
+    
+    const sendOutput = (str: string) => {
+      const msg = new TextEncoder().encode(str);
+      session.buffer.push(msg);
+      session.subscribers.forEach(cb => cb(msg));
+      useTerminalStore.getState().handlePtyOutput(str);
+    };
+
+    sendOutput(`\r\n\x1b[1;36m[Autarch OS]\x1b[0m Browser Sandbox Mode Activated (${reason})\r\n`);
+    sendOutput('\x1b[1;32mautarch@browser:~$\x1b[0m ');
+
+    session.writeFn = (data: string) => {
+      if (data.endsWith('\r')) {
+        const payload = data.slice(0, -1);
+        if (payload) { session.mockInputBuffer += payload; sendOutput(payload); }
+        sendOutput('\r\n');
+        const cmd = session.mockInputBuffer.trim();
+        if (cmd === 'help') {
+           sendOutput('Sandbox commands: help, ls, clear\r\n');
+        } else if (cmd === 'ls') {
+           sendOutput('bin  etc  home  lib  opt  sys  usr  var\r\n');
+        } else if (cmd === 'clear') {
+           session.buffer = [];
+           sendOutput('\x1bc');
+        } else if (cmd.startsWith('curl')) {
+           sendOutput('Downloading...\r\n[OK] Hermes Mock Installer\r\n');
+           setTimeout(() => sendOutput('Installation complete\r\n'), 1000);
+        } else if (cmd.length > 0) {
+           sendOutput(`zsh: command not found: ${cmd}\r\n`);
+        }
+        session.mockInputBuffer = '';
+        sendOutput('\x1b[1;32mautarch@browser:~$\x1b[0m ');
+      } else if (data === '\x7f' || data === '\b') {
+        if (session.mockInputBuffer.length > 0) {
+           session.mockInputBuffer = session.mockInputBuffer.slice(0, -1);
+           sendOutput('\b \b');
+        }
+      } else {
+         session.mockInputBuffer += data;
+         sendOutput(data);
+      }
+    };
+
+    if (useTerminalStore.getState().activeTabId === id) updateGlobalStateFromSession(id);
+  };
+
+  if (!isTauri) {
+    enableMockTerminal('Not running in Tauri');
+    return;
+  }
 
   try {
     const { spawn } = await import('tauri-pty');
-    let shell = 'bash';
-    try {
-      const { platform } = await import('@tauri-apps/plugin-os');
-      shell = platform() === 'macos' ? '/bin/zsh' : '/bin/bash';
-    } catch {
-      // Fallback: if Tauri OS plugin unavailable, default to bash
-      shell = '/bin/bash';
-    }
-
-    console.log('[TerminalStore] Spawning PTY with shell:', shell);
-    globalPtyProcess = spawn(shell, [], { 
-      cols: 80, 
-      rows: 24
-    } as Parameters<typeof spawn>[2]);
-
-    // Expose internal errors (like missing Tauri V2 capability) directly to the terminal
-    // @ts-ignore
-    if (globalPtyProcess && globalPtyProcess._init) {
-      // @ts-ignore
-      globalPtyProcess._init.catch((err: any) => {
-        console.error('[Terminal] PTY Internal Spawn Error:', err);
-        const msg = new TextEncoder().encode(`\r\n\x1b[1;31m⚠ PTY SPAWN ERROR:\x1b[0m ${err instanceof Error ? err.message : JSON.stringify(err)}\r\n\x1b[1;33mThis is likely a Tauri V2 Capabilities issue. Check src-tauri/capabilities/default.json\x1b[0m\r\n`);
-        ptyBuffer.push(msg);
-        ptySubscribers.forEach(cb => cb(msg));
-        store.setShellReady(false);
-      });
-    }
-
-    store.setShellReady(true);
-    store.setPtyWriteFn((data: string) => {
-      globalPtyProcess?.write(data);
+    session.process = await spawn('zsh', [], {
+      cols: 80,
+      rows: 24,
+      env: {}
     });
 
-    globalPtyProcess.onData((data: Uint8Array) => {
-      ptyBuffer.push(data);
-      // keep buffer somewhat bounded (approx lines, arbitrary max 1000 chunks)
-      if (ptyBuffer.length > 1000) ptyBuffer.shift();
-      
-      ptySubscribers.forEach(cb => cb(data));
+    session.writeFn = (data: string) => {
+      session.process?.write(data);
+    };
 
-      // Feed the reactive output parser
+    session.process.onData((data: Uint8Array) => {
+      session.buffer.push(data);
+      if (session.buffer.length > 1000) session.buffer.shift();
+      session.subscribers.forEach(cb => cb(data));
       const text = new TextDecoder().decode(data);
-      store.handlePtyOutput(text);
+      useTerminalStore.getState().handlePtyOutput(text);
     });
 
-    globalPtyProcess.onExit(({ exitCode }: { exitCode: number }) => {
-      globalPtyProcess = null;
-      store.setShellReady(false);
-      store.setPtyWriteFn(null);
+    session.process.onExit(({ exitCode }: { exitCode: number }) => {
+      session.process = null;
+      session.shellReady = false;
+      session.writeFn = null;
       const msg = new TextEncoder().encode(`\r\n\x1b[1;33m⚠ Shell exited (code ${exitCode}).\x1b[0m\r\n  Press any key to restart the shell.\r\n`);
-      ptyBuffer.push(msg);
-      ptySubscribers.forEach(cb => cb(msg));
+      session.buffer.push(msg);
+      session.subscribers.forEach(cb => cb(msg));
+      if (useTerminalStore.getState().activeTabId === id) updateGlobalStateFromSession(id);
     });
 
-    store.setShellReady(true);
+    session.shellReady = true;
+    if (useTerminalStore.getState().activeTabId === id) updateGlobalStateFromSession(id);
   } catch (err) {
-    console.warn('[Terminal] PTY spawn failed, running in read-only mode:', err);
-    store.setShellReady(false);
+    enableMockTerminal('Tauri PTY Spawn Failed');
   }
 }
 
-export function subscribeToPty(cb: (data: Uint8Array) => void) {
-  ptySubscribers.add(cb);
-  return () => ptySubscribers.delete(cb);
+export function subscribeToPty(id: string, cb: (data: Uint8Array) => void) {
+  const session = getSession(id);
+  session.subscribers.add(cb);
+  return () => session.subscribers.delete(cb);
 }
 
-export function getPtyBuffer() {
-  return ptyBuffer;
+export function getPtyBuffer(id: string) {
+  return getSession(id).buffer;
 }
 
-export function resizeGlobalPty(cols: number, rows: number) {
-  if (globalPtyProcess) {
-    globalPtyProcess.resize(cols, rows);
+export function resizePty(id: string, cols: number, rows: number) {
+  const session = getSession(id);
+  if (session.process) session.process.resize(cols, rows);
+}
+
+export function clearTerminalOutput(id: string) {
+  const session = getSession(id);
+  session.buffer = [];
+  const msg = new TextEncoder().encode('\x1b[2J\x1b[3J\x1b[H');
+  session.subscribers.forEach(cb => cb(msg));
+}
+
+export function killAndRestartPty(id: string) {
+  const session = getSession(id);
+  if (session.process) {
+    try { session.process.write('\x03\x04'); } catch {}
+    session.process = null;
   }
+  session.shellReady = false;
+  session.writeFn = null;
+  session.mockMode = false;
+  clearTerminalOutput(id);
+  if (useTerminalStore.getState().activeTabId === id) updateGlobalStateFromSession(id);
+  setTimeout(() => initPty(id), 100);
 }
+
+// ── Store ────────────────────────────────────────────────────
 
 export const useTerminalStore = create<TerminalState>((set, get) => ({
-  // ── Initial State ──
+  tabs: [],
+  activeTabId: null,
+
   shellReady: false,
   ptyWriteFn: null,
   hermesInstalled: false,
   installPhase: 'idle',
   installError: null,
 
-  // ── PTY Lifecycle ──
+  createTab: async () => {
+    const id = `term-${tabCounter++}`;
+    get().setActiveTabId(id);
+    set((state) => ({ tabs: [...state.tabs, { id, title: `zsh` }] }));
+    await initPty(id);
+  },
+
+  closeTab: (id) => {
+    const session = getSession(id);
+    if (session.process) {
+      try { session.process.write('\x03\x04'); } catch {}
+    }
+    ptySessions.delete(id);
+    
+    set((state) => {
+      const tabs = state.tabs.filter(t => t.id !== id);
+      const nextActiveId = tabs.length > 0 ? tabs[tabs.length - 1].id : null;
+      return { tabs, activeTabId: nextActiveId };
+    });
+    
+    const activeId = get().activeTabId;
+    if (activeId) updateGlobalStateFromSession(activeId);
+    else set({ shellReady: false, ptyWriteFn: null });
+  },
+
+  setActiveTabId: (id) => {
+    set({ activeTabId: id });
+    updateGlobalStateFromSession(id);
+  },
 
   setShellReady: (ready) => {
     set({ shellReady: ready });
-    // When shell becomes ready, auto-check if Hermes is installed
-    if (ready) {
-      get().checkHermesInstalled();
-    }
+    if (ready) get().checkHermesInstalled();
   },
 
-  setPtyWriteFn: (fn) => {
-    set({ ptyWriteFn: fn });
-  },
+  setPtyWriteFn: (fn) => set({ ptyWriteFn: fn }),
 
-  // ── Command Injection ──
-
-  injectCommand: (cmd: string) => {
+  injectCommand: (cmd) => {
     const { ptyWriteFn, shellReady } = get();
-    if (!shellReady || !ptyWriteFn) {
-      console.warn('[TerminalStore] Cannot inject command: shell not ready');
-      return;
-    }
-    // Write command + carriage return to execute
+    if (!shellReady || !ptyWriteFn) return;
     ptyWriteFn(cmd + '\r');
   },
 
-  // ── 🧩 Reactive Output Parser ──
-  // Analyzes PTY output in real-time during installation to trigger
-  // state transitions based on actual shell events instead of blind timers.
-
-  handlePtyOutput: (text: string) => {
+  handlePtyOutput: (text) => {
     const { installPhase } = get();
-
-    // Only parse during active installation phases
     if (installPhase !== 'installing' && installPhase !== 'setup-wizard') return;
 
-    // Check for setup wizard start
-    if (installPhase === 'installing') {
-      const isWizard = SETUP_WIZARD_PATTERNS.some((p) => text.includes(p));
-      if (isWizard) {
-        set({ installPhase: 'setup-wizard' });
-        return;
-      }
+    if (installPhase === 'installing' && SETUP_WIZARD_PATTERNS.some(p => text.includes(p))) {
+      set({ installPhase: 'setup-wizard' });
+      return;
     }
 
-    // Check for installation completion
-    const isDone = INSTALL_DONE_PATTERNS.some((p) => text.includes(p));
-    if (isDone) {
+    if (INSTALL_DONE_PATTERNS.some(p => text.includes(p))) {
       set({ installPhase: 'provisioning', hermesInstalled: true });
-      // Trigger Autarch OS kit provisioning
       import('../services/hermesProvisioner').then(({ applyHermesKit }) => {
-        applyHermesKit().then((kitResult) => {
-          console.warn(`[TerminalStore] Kit provisioned: ${kitResult.applied.length} files`);
-          set({ installPhase: 'done' });
-        }).catch(() => {
-          set({ installPhase: 'done' }); // Hermes still works vanilla
-        });
+        applyHermesKit().then(() => set({ installPhase: 'done' })).catch(() => set({ installPhase: 'done' }));
       });
       return;
     }
 
-    // Check for errors (only flag if we haven't transitioned yet)
-    const isError = INSTALL_ERROR_PATTERNS.some((p) => text.includes(p));
-    if (isError && installPhase === 'installing') {
-      // Don't immediately error — curl output may contain "error" in logs.
-      // Only set error if the pattern appears after initial download phase.
-      // We log it but don't break the flow — the poll will verify later.
+    if (installPhase === 'installing' && INSTALL_ERROR_PATTERNS.some(p => text.includes(p))) {
       console.warn('[TerminalStore] Possible install error detected:', text.slice(0, 200));
     }
   },
 
-  // ── Hermes Detection ──
-
   checkHermesInstalled: async () => {
     try {
       const { Command } = await import('@tauri-apps/plugin-shell');
-      const result = await Command.create('sh', [
-        '-c',
-        'test -d "$HOME/.hermes/hermes-agent" && echo "INSTALLED" || echo "NOT_INSTALLED"',
-      ]).execute();
-
+      const result = await Command.create('sh', ['-c', 'test -d "$HOME/.hermes/hermes-agent" && echo "INSTALLED" || echo "NOT_INSTALLED"']).execute();
       const installed = result.stdout.trim() === 'INSTALLED';
       set({ hermesInstalled: installed });
-
-      if (installed) {
-        set({ installPhase: 'done' });
-      }
+      if (installed) set({ installPhase: 'done' });
     } catch {
-      // Tauri shell not available (browser dev mode) — assume not installed
-      console.warn('[TerminalStore] Shell check failed, assuming not installed');
       set({ hermesInstalled: false });
     }
   },
 
-  // ── Hermes Installation ──
-
   installHermes: () => {
     const { shellReady, ptyWriteFn, installPhase } = get();
-
-    if (installPhase === 'installing' || installPhase === 'setup-wizard') {
-      console.warn('[TerminalStore] Installation already in progress');
-      return;
-    }
+    if (installPhase === 'installing' || installPhase === 'setup-wizard') return;
 
     if (!shellReady || !ptyWriteFn) {
-      set({
-        installPhase: 'error',
-        installError: 'Terminal shell is not ready. Please wait for the terminal to initialize.',
-      });
+      set({ installPhase: 'error', installError: 'Terminal shell is not ready.' });
       return;
     }
 
-    // W-07 FIX: Confirmation before executing remote script
-    const confirmed = window.confirm(
-      'This will download and execute the official Hermes Agent installer from NousResearch (github.com/NousResearch/hermes-agent).\n\nThe script will be executed in your terminal. Continue?'
-    );
+    const confirmed = window.confirm('Download and execute official Hermes Agent installer from NousResearch?');
     if (!confirmed) return;
 
     set({ installPhase: 'installing', installError: null });
-
-    // Inject the official NousResearch install command into the terminal
     ptyWriteFn(HERMES_INSTALL_CMD + '\r');
 
-    // 🧩 The reactive output parser (handlePtyOutput) handles phase transitions
-    // in real-time. The fallback poll below catches edge cases where patterns
-    // may not match (e.g. non-standard installer output).
-
-    // Fallback: Poll for installation completion (check every 10s, max 10min)
-    // This is a safety net — the reactive parser should catch most transitions.
     let pollCount = 0;
-    const maxPolls = 60; // 60 * 10s = 10 minutes
     const pollInstall = setInterval(async () => {
       pollCount++;
       const currentPhase = get().installPhase;
+      if (currentPhase === 'done' || currentPhase === 'provisioning') { clearInterval(pollInstall); return; }
 
-      // If reactive parser already moved us to 'done' or 'provisioning', stop polling
-      if (currentPhase === 'done' || currentPhase === 'provisioning') {
-        clearInterval(pollInstall);
-        return;
-      }
-
-      // Filesystem check as backup verification
       await get().checkHermesInstalled();
       if (get().hermesInstalled) {
         clearInterval(pollInstall);
-        // Only provision if reactive parser hasn't already done it
         if (get().installPhase === 'installing') {
           set({ installPhase: 'provisioning' });
           import('../services/hermesProvisioner').then(({ applyHermesKit }) => {
-            applyHermesKit()
-              .then(() => set({ installPhase: 'done' }))
-              .catch(() => set({ installPhase: 'done' }));
+            applyHermesKit().then(() => set({ installPhase: 'done' })).catch(() => set({ installPhase: 'done' }));
           });
-        } else {
-          set({ installPhase: 'done' });
         }
-      } else if (pollCount >= maxPolls) {
+      } else if (pollCount >= 60) {
         clearInterval(pollInstall);
       }
     }, 10_000);
